@@ -46,15 +46,21 @@ Slack Messages ──webhook──▶ Harper Fabric ◀──MCP──▶ Claude
 ## Prerequisites
 
 - **Node.js** 20+ (recommended: 24 LTS)
-- **Harper CLI**: `npm install -g harperdb`
-- **API Keys**:
-  - [Anthropic Claude](https://console.anthropic.com/) (message classification)
-  - [Voyage AI](https://dash.voyageai.com/) (vector embeddings)
-  - [Slack App](https://api.slack.com/apps) (webhook ingestion)
 
 ## Quick Start
 
-### 1. Clone and install
+### 1. Create your accounts
+
+Sign up for these services and grab your API keys. All have free tiers.
+
+| Service | Sign Up | What You Need |
+|---------|---------|---------------|
+| **Harper Fabric** | [fabric.harper.fast](https://fabric.harper.fast) | Create an account, organization, and cluster. Note your cluster URL, username, and password. |
+| **Anthropic** | [console.anthropic.com](https://console.anthropic.com/) | Get an API key (used for message classification) |
+| **Voyage AI** | [dash.voyageai.com](https://dash.voyageai.com/) | Get an API key (used for vector embeddings) |
+| **Slack** | [api.slack.com/apps](https://api.slack.com/apps) | Create a Slack app. See [docs/slack-app-setup.md](docs/slack-app-setup.md) for the full walkthrough. |
+
+### 2. Clone and install
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/HarperVectorMemorySystem.git
@@ -63,26 +69,23 @@ npm install -g harperdb   # Install the Harper runtime (one-time)
 npm install               # Install project dependencies
 ```
 
-### 2. Configure environment
+### 3. Configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your API keys. At minimum you need `ANTHROPIC_API_KEY` and `VOYAGE_API_KEY` for local development. See [Environment Variables](#environment-variables) for the full list.
+Open `.env` and paste in the API keys and cluster credentials from Step 1. See [Environment Variables](#environment-variables) for details on each variable.
 
-### 3. Run locally (no signup required)
-
-Harper runs as a local process - no cloud account needed for development:
+### 4. Run locally
 
 ```bash
 npm run dev
 ```
 
-This starts Harper locally on `http://localhost:9926` with the Memory table, vector index, and all endpoints ready. You can immediately test the API:
+This starts Harper locally on `http://localhost:9926` with the Memory table, vector index, and all endpoints ready. Test it:
 
 ```bash
-# Test the MemorySearch endpoint
 curl -X POST http://localhost:9926/MemorySearch/ \
   -H "Content-Type: application/json" \
   -d '{"query": "test search"}'
@@ -91,31 +94,16 @@ curl -X POST http://localhost:9926/MemorySearch/ \
 For Slack webhook testing during local development, use a tunnel:
 
 ```bash
-ngrok http 9926   # Then use the ngrok URL as your Slack webhook URL
+ngrok http 9926   # Then use the ngrok URL as your Slack Events API request URL
 ```
 
-### 4. Set up Slack
+### 5. Deploy to Harper Fabric
 
-See [docs/slack-app-setup.md](docs/slack-app-setup.md) for the full guide.
+```bash
+npm run deploy
+```
 
-### 5. Deploy to Harper Fabric (cloud)
-
-When you're ready for production, create a free Harper Fabric cluster:
-
-1. Sign up at [fabric.harper.fast](https://fabric.harper.fast) (free tier, no credit card)
-2. Create an organization and cluster
-3. Add your cluster credentials to `.env`:
-   ```env
-   CLI_TARGET=https://your-cluster.your-org.harperfabric.com
-   CLI_TARGET_USERNAME=your_admin_username
-   CLI_TARGET_PASSWORD=your_admin_password
-   ```
-4. Deploy:
-   ```bash
-   npm run deploy
-   ```
-
-> **Note**: Harper Fabric account and cluster creation currently requires the web UI. There is no CLI or API for provisioning new clusters. Once your cluster exists, all subsequent deployments are fully programmatic via `npm run deploy`.
+Once deployed, update your Slack Events API request URL to point at your cluster: `https://your-cluster.harperfabric.com/SlackWebhook`
 
 ### 6. Connect Claude Desktop via MCP
 
