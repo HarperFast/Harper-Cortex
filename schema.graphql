@@ -1,0 +1,17 @@
+type Memory @table {
+	id: ID @primaryKey
+	rawText: String
+	source: String @indexed
+	sourceType: String @indexed
+	channelId: String @indexed
+	channelName: String
+	authorId: String @indexed
+	authorName: String
+	classification: String @indexed
+	entities: Any
+	embedding: [Float] @indexed(type: "HNSW", distance: "cosine")
+	summary: String
+	timestamp: Date @indexed
+	threadTs: String
+	metadata: Any
+}

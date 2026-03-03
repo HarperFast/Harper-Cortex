@@ -9,7 +9,10 @@
     "start": "harperdb run .",
     "dev": "harperdb dev .",
     "deploy": "npx -y dotenv-cli -- harperdb deploy . restart=rolling replicated=true",
-    "test": "node --test test/*.test.js"
+    "test": "node --experimental-test-module-mocks --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
