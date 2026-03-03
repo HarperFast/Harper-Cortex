@@ -15,7 +15,14 @@
       "Bash(npx skills add harperfast/skills)",
       "Bash(npx skills add harperfast/skills --yes)",
       "Bash(git -C /Users/danielpabbott/HarperVectorMemorySystem add package.json package-lock.json config.yaml .env.example .gitignore LICENSE .agents/ .claude/)",
-      "Bash(git -C:*)"
+      "Bash(git -C:*)",
+      "Bash(nvm ls-remote --lts)",
+      "Bash(source ~/.nvm/nvm.sh)",
+      "Bash(nvm install --lts)",
+      "Bash(nvm use v24.14.0)",
+      "Bash(npm install --prefix /Users/danielpabbott/HarperVectorMemorySystem)",
+      "Bash(node --experimental-test-module-mocks --test test/classify.test.js)",
+      "Bash(npm test)"
     ]
   }
 }
