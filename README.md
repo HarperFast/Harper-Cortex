@@ -11,36 +11,32 @@ When you use Claude, ChatGPT, or Cursor, your conversation history and learned c
 Deploy a centralized vector database on Harper Fabric and connect it to your AI agents via [MCP (Model Context Protocol)](https://modelcontextprotocol.io). All your tools read and write to the same unified memory pool.
 
 ```
-Slack Messages ──webhook──▶ Harper Fabric ◀──MCP──▶ Claude Desktop
-                           (vector DB)              (or Cursor, etc.)
+Slack / GitHub / Linear / ...  ──webhook──▶  Harper Fabric  ◀──MCP──▶  Claude Desktop / Cursor / ...
+                                              (vector DB)
 ```
 
 ## Architecture
 
 ```
-┌─────────────┐     POST     ┌──────────────────────────────────────┐
-│   Slack      │ ──────────▶ │  Harper Fabric Cluster               │
-│   Events API │             │                                      │
-└─────────────┘             │  ┌─────────────┐  ┌───────────────┐  │
-                             │  │ SlackWebhook │  │ MemorySearch  │  │
-                             │  │ (classify +  │  │ (hybrid       │  │
-                             │  │  embed +     │  │  vector +     │  │
-                             │  │  store)      │  │  tag search)  │  │
-                             │  └──────┬───────┘  └───────────────┘  │
-                             │         │                              │
-                             │  ┌──────▼───────────────────────────┐ │
-                             │  │ Memory Table (HNSW vector index) │ │
-                             │  └──────────────────────────────────┘ │
-                             │                                      │
-                             │  ┌──────────────────────────────────┐ │
-                             │  │ MCP Server (/mcp endpoint)       │ │
-                             │  └──────────────┬───────────────────┘ │
-                             └─────────────────┼────────────────────┘
-                                               │
-                              ┌─────────────────▼──────────────────┐
-                              │  Claude Desktop / Cursor / Any     │
-                              │  MCP-compliant AI client           │
-                              └────────────────────────────────────┘
+INGESTION SOURCES              HARPER FABRIC CLUSTER
+┌──────────────┐
+│ Slack        │ ──▶ ┌───────────────────────────────────────────┐
+│ Events API   │     │  Webhook Resource (e.g. SlackWebhook)     │
+└──────────────┘     │                                           │
+                     │  classify (Claude) + embed (Voyage AI)    │
+┌──────────────┐     │              │                            │
+│ GitHub       │ ──▶ │  ┌───────────▼──────────────────────────┐ │
+│ Webhooks     │     │  │  Memory Table (HNSW vector index)    │ │
+└──────────────┘     │  └───────────┬──────────────────────────┘ │
+                     │              │                            │
+┌──────────────┐     │  ┌───────────▼──────────────────────────┐ │
+│ Linear / ... │ ──▶ │  │  MCP Server + MemorySearch endpoint  │ │
+└──────────────┘     │  └───────────┬──────────────────────────┘ │
+                     └─────────────┼─────────────────────────────┘
+                                   │ MCP JSON-RPC
+              ┌────────────────────┼────────────────────┐
+              ▼                    ▼                    ▼
+       Claude Desktop           Cursor           Any MCP Client
 ```
 
 ## Prerequisites
@@ -192,8 +188,8 @@ Tests use Node.js built-in test runner with module mocking. No extra test depend
 
 ## How It Works
 
-1. **Slack sends a message** via webhook to `/SlackWebhook`
-2. **Classification**: Claude Haiku categorizes the message (decision, action_item, knowledge, etc.) and extracts entities (people, projects, technologies)
+1. **A source sends an event** via webhook (e.g. Slack message, GitHub issue, Linear task)
+2. **Classification**: Claude Haiku categorizes the content (decision, action_item, knowledge, etc.) and extracts entities (people, projects, technologies)
 3. **Embedding**: Voyage AI generates a 1024-dimensional vector embedding
 4. **Storage**: Raw text, classification, entities, and embedding are stored in the Memory table with HNSW vector indexing
 5. **Retrieval**: Any MCP-connected AI client queries the Memory table using hybrid search (vector similarity + attribute filters)
