@@ -248,6 +248,18 @@ Any MCP-compliant AI client can connect to the Harper MCP Server and query your 
 | **Claude Code** (CLI) | MCP-compatible |
 | **Any MCP client** | Open standard - works with any compliant tool |
 
+## Agent Skills
+
+This project uses [Harper Agent Skills](https://github.com/harperfast/skills) — reusable AI agent instructions that guide Claude and other AI tools to follow Harper best practices when contributing code. Skills are tracked in `skills-lock.json` and installed into `.agents/skills/` (excluded from version control).
+
+### Installed Skills
+
+| Skill | Description |
+|-------|-------------|
+| `harper-best-practices` | Schema design, automatic APIs, authentication, custom resources, caching, vector indexing, and deployment patterns for Harper applications |
+
+AI agents (Claude Code, Cursor, etc.) load skills automatically from `.agents/skills/` and apply the relevant guidelines when making changes to the codebase.
+
 ## License
 
 MIT

@@ -31,6 +31,12 @@ npm run deploy # Deploy to Harper Fabric
 
 Slack webhook -> classify (Claude) + embed (Voyage AI) -> store in Memory table -> query via MCP from Claude Desktop/Cursor.
 
+## Agent Skills
+
+Skills from `harperfast/skills` are tracked in `skills-lock.json` and installed into `.agents/skills/` (git-ignored). Refer to the relevant skill rules when making changes:
+
+- **`harper-best-practices`** — Apply when modifying `schema.graphql`, `resources.js`, or `config.yaml`. Covers schema design, custom resources, authentication, vector indexing, and deployment.
+
 ## Conventions
 
 - ES module syntax (import/export)
