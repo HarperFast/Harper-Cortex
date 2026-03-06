@@ -34,6 +34,7 @@
 		"voyageai": "^0.2.1"
 	},
 	"devDependencies": {
+		"harperdb": "*",
 		"@commitlint/cli": "^20.0.0",
 		"@commitlint/config-conventional": "^20.0.0",
 		"@semantic-release/commit-analyzer": "^13.0.1",
