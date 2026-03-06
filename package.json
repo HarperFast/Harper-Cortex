@@ -1,6 +1,6 @@
 {
 	"name": "harper-cortex",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Open-source AI memory system powered by Harper Fabric. Clone, configure, deploy.",
 	"type": "module",
 	"main": "resources.js",
