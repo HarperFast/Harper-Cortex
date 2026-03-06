@@ -124,6 +124,9 @@ See [docs/mcp-setup.md](docs/mcp-setup.md) for configuration instructions.
 | `CLI_TARGET` | For deploy | Harper Fabric cluster URL (e.g., `https://cluster.org.harperfabric.com`) |
 | `CLI_TARGET_USERNAME` | For deploy | Harper cluster admin username |
 | `CLI_TARGET_PASSWORD` | For deploy | Harper cluster admin password |
+| `SYNAPSE_ENDPOINT` | For Synapse CLI | Base URL of Harper-Cortex deployment |
+| `SYNAPSE_PROJECT` | For Synapse CLI | Project ID to scope context entries |
+| `SYNAPSE_AUTH` | For Synapse CLI | Authorization header (e.g. `Basic dXNlcjpwYXNz`) |
 
 ## API Endpoints
 
@@ -170,18 +173,25 @@ Tests use Node.js built-in test runner with module mocking. No extra test depend
 
 ```
 ├── config.yaml         # Harper application configuration
-├── schema.graphql      # Database schema (Memory table with HNSW vector index)
-├── resources.js        # Core application logic (webhook, search, table extension)
+├── schema.graphql      # Database schema (Memory + SynapseEntry tables)
+├── resources.js        # Core logic: webhook, search, Synapse resource classes
 ├── package.json        # Dependencies and scripts
 ├── .env.example        # Environment variable template
-├── .nvmrc              # Node.js version
-├── test/               # Test suite
+├── .nvmrc              # Node.js version (24 LTS)
+├── bin/
+│   └── synapse.js      # Synapse CLI (sync, emit, search, watch, status)
+├── test/               # Test suite (77 tests)
 │   ├── classify.test.js
 │   ├── embedding.test.js
 │   ├── webhook.test.js
-│   └── search.test.js
+│   ├── search.test.js
+│   ├── synapse-classify.test.js
+│   ├── synapse-search.test.js
+│   ├── synapse-ingest.test.js
+│   └── synapse-emit.test.js
 └── docs/               # Guides
     ├── architecture.md
+    ├── synapse-design.md
     ├── slack-app-setup.md
     └── mcp-setup.md
 ```
@@ -247,6 +257,71 @@ Any MCP-compliant AI client can connect to the Harper MCP Server and query your 
 | **Windsurf** | MCP-compatible |
 | **Claude Code** (CLI) | MCP-compatible |
 | **Any MCP client** | Open standard - works with any compliant tool |
+
+## Synapse: Universal Context Broker
+
+Synapse extends Harper-Cortex into a **Universal Context Broker** — a system that bridges context across AI development tools. When you switch from Claude Code to Cursor, or add a new team member, the "Why" behind architectural decisions is normally lost. Synapse captures it.
+
+```
+  INGEST (Tool → Harper)              EMIT (Harper → Tool)
+
+  CLAUDE.md ──────┐                  ┌──▶ CLAUDE.md / SYNAPSE.md
+  .cursor/rules/ ─┤  ┌────────────┐  ├──▶ .cursor/rules/*.mdc
+  .windsurf/     ─┤─▶│  Synapse   │  ├──▶ .windsurf/rules/*.md
+  copilot-inst.  ─┤  │  Ingest    │  └──▶ copilot-instructions.md
+  Manual / Slack ─┘  └─────┬──────┘
+                            │               ┌──────────────────┐
+                    ┌───────▼────────┐      │   SynapseEmit    │
+                    │ SynapseEntry   │◀─────│   query → format │
+                    │ (HNSW indexed) │      └──────────────────┘
+                    └───────┬────────┘
+                            │ MCP JSON-RPC
+              ┌─────────────┼─────────────┐
+              ▼             ▼             ▼
+       Claude Desktop    Cursor    Any MCP Client
+```
+
+### Context Types
+
+| Type | Purpose | Example |
+|------|---------|---------|
+| `intent` | The "Why" | "Chose HarperDB for HNSW vector search" |
+| `constraint` | Must/Must-Not rules | "Never use an ORM — raw SQL only" |
+| `artifact` | References | "Architecture diagram at docs/arch.png" |
+| `history` | Failed paths | "Tried Redis Streams, abandoned due to durability" |
+
+### Synapse CLI
+
+```bash
+# Install globally after cloning
+npm install -g .
+
+# Sync your context files to Harper-Cortex
+SYNAPSE_PROJECT=my-app synapse sync
+
+# Search across all context
+SYNAPSE_PROJECT=my-app synapse search "why did we choose postgres"
+
+# Emit context in Cursor's native format (writes .mdc files)
+SYNAPSE_PROJECT=my-app synapse emit --target cursor --write
+
+# Watch context files and auto-sync on change
+SYNAPSE_PROJECT=my-app synapse watch
+
+# Show entry counts by type and source
+SYNAPSE_PROJECT=my-app synapse status
+```
+
+### Synapse API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/SynapseIngest` | POST | Ingest context from any tool. Parses, classifies, embeds, and stores. |
+| `/SynapseSearch` | POST | Semantic search scoped to a project. |
+| `/SynapseEmit` | POST | Emit context formatted for a target tool. |
+| `/SynapseEntry/` | GET | List/browse all context entries. |
+
+See [docs/synapse-design.md](docs/synapse-design.md) for full architecture details.
 
 ## Agent Skills
 

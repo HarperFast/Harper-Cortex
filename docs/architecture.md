@@ -90,6 +90,62 @@ The `MemorySearch` endpoint combines two search strategies:
 
 This hybrid approach gives better results than pure vector search alone.
 
+## Synapse: Universal Context Broker
+
+Synapse adds a second data layer alongside Memory — the `SynapseEntry` table — for storing structured development context from AI tool rule files.
+
+```
+  INGEST                           SYNAPSE LAYER                     EMIT
+┌──────────────────┐
+│ CLAUDE.md        │ ──▶ ┌──────────────────────────────────────┐ ──▶ CLAUDE.md
+│ .cursor/rules/   │     │  SynapseIngest                       │ ──▶ .cursor/*.mdc
+│ .windsurf/rules/ │     │  1. Parse (tool-specific parser)     │ ──▶ .windsurf/*.md
+│ copilot-inst.    │     │  2. Classify (Claude Haiku)          │ ──▶ copilot-inst.
+│ manual / slack   │     │  3. Embed (Voyage AI)                │
+└──────────────────┘     │  4. Store → SynapseEntry             │
+                         └──────────────────┬───────────────────┘
+                                            │
+                               ┌────────────▼─────────────┐
+                               │   SynapseEntry Table     │
+                               │   HNSW vector index      │
+                               │                          │
+                               │   Types:                 │
+                               │     intent | constraint  │
+                               │     artifact | history   │
+                               └────────────┬─────────────┘
+                                            │
+                               ┌────────────▼─────────────┐
+                               │   SynapseSearch          │
+                               │   (semantic query,       │
+                               │    scoped by projectId)  │
+                               └────────────┬─────────────┘
+                                            │ MCP JSON-RPC
+              ┌─────────────────────────────┼──────────────────────────┐
+              ▼                             ▼                          ▼
+       Claude Desktop                    Cursor                Any MCP Client
+```
+
+### SynapseEntry Schema
+
+| Field | Type | Indexed | Purpose |
+|-------|------|---------|---------|
+| `id` | ID | Primary Key | Unique identifier |
+| `projectId` | String | Yes | Scopes entries to a project |
+| `type` | String | Yes | `intent \| constraint \| artifact \| history` |
+| `content` | String | No | Full context text |
+| `source` | String | Yes | `claude_code \| cursor \| windsurf \| copilot \| manual \| slack` |
+| `sourceFormat` | String | No | `markdown \| mdc \| json` |
+| `embedding` | [Float] | HNSW/cosine | 1024-dim vector |
+| `summary` | String | No | LLM one-liner |
+| `status` | String | Yes | `active \| superseded \| archived` |
+| `references` | [String] | No | Memory record IDs this traces back to |
+| `tags` | [String] | No | Freeform labels |
+| `entities` | Any | No | `{ people, projects, technologies, topics }` |
+| `parentId` | String | Yes | Self-referential: constraint → intent |
+| `createdAt` | Date | Yes | Creation timestamp |
+| `updatedAt` | Date | Yes | Last update timestamp |
+| `metadata` | Any | No | Tool-specific data (filePath, globs, etc.) |
+
 ## Extensibility
 
 The system is designed to be swappable at each layer:

@@ -14,16 +14,17 @@ An agent-agnostic AI memory system using Harper Fabric as the vector database an
 
 ## Key Files
 
-- `resources.js` - Core application: SlackWebhook, MemorySearch, MemoryTable classes + classifyMessage, generateEmbedding, verifySlackSignature helpers
-- `schema.graphql` - Memory table with HNSW vector index (no @export since we extend it)
+- `resources.js` - Core application: SlackWebhook, MemorySearch, MemoryTable + all Synapse resource classes + helpers
+- `schema.graphql` - Memory and SynapseEntry tables with HNSW vector indexes (no @export since we extend them)
 - `config.yaml` - Harper app config (loadEnv, REST, schema, resource files)
 - `.env.example` - All required environment variables documented
+- `bin/synapse.js` - Synapse CLI: sync, emit, search, watch, status commands
 
 ## Development
 
 ```bash
 npm run dev    # Start locally on port 9926
-npm test       # Run all 35 tests
+npm test       # Run all 77 tests
 npm run deploy # Deploy to Harper Fabric
 ```
 
@@ -31,7 +32,7 @@ npm run deploy # Deploy to Harper Fabric
 
 Slack webhook -> classify (Claude) + embed (Voyage AI) -> store in Memory table -> query via MCP from Claude Desktop/Cursor.
 
-## Synapse (feature/synapse branch)
+## Synapse
 
 Universal Context Broker — ingests development context from any AI tool (Claude Code, Cursor, Windsurf, Copilot) and emits it in any other tool's native format. Full design spec: `docs/synapse-design.md`.
 
