@@ -1,5 +1,5 @@
 {
-	"name": "harper-cortex",
+	"name": "@harperfast/cortex",
 	"version": "0.2.0",
 	"description": "Open-source AI memory system powered by Harper Fabric. Clone, configure, deploy.",
 	"type": "module",
@@ -10,7 +10,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/HarperFast/Harper-Cortex.git"
+		"url": "https://github.com/HarperFast/Cortex.git"
 	},
 	"scripts": {
 		"start": "harperdb run .",
@@ -31,7 +31,7 @@
 	},
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.39.0",
-		"voyageai": "^0.2.1"
+		"@xenova/transformers": "^2.17.2"
 	},
 	"devDependencies": {
 		"harperdb": "*",

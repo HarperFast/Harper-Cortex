@@ -31,27 +31,21 @@ mock.module('@anthropic-ai/sdk', {
 	},
 });
 
-const mockEmbed = mock.fn();
-mock.module('voyageai', {
+const mockExtractor = mock.fn();
+mock.module('@xenova/transformers', {
 	namedExports: {
-		VoyageAIClient: class VoyageAIClient {
-			constructor() {}
-			embed(...args) {
-				return mockEmbed(...args);
-			}
-		},
+		pipeline: mock.fn(async () => mockExtractor),
 	},
 });
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
-process.env.VOYAGE_API_KEY = 'test-key';
 
 const { SynapseIngest } = await import('../resources.js');
 
 describe('SynapseIngest', () => {
 	beforeEach(() => {
 		mockCreate.mock.resetCalls();
-		mockEmbed.mock.resetCalls();
+		mockExtractor.mock.resetCalls();
 		mockSynapsePut.mock.resetCalls();
 
 		mockCreate.mock.mockImplementation(async () => ({
@@ -65,8 +59,8 @@ describe('SynapseIngest', () => {
 			}],
 		}));
 
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0.1) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0.1),
 		}));
 
 		mockSynapsePut.mock.mockImplementation(async () => {});
@@ -162,7 +156,7 @@ describe('SynapseIngest', () => {
 		});
 
 		it('parseClaudeCode preserves preamble before first heading', async () => {
-			const claudeMd = `# Harper-Cortex\n\nIntro text here.\n\n## Architecture\n\nUse Harper for storage.`;
+			const claudeMd = `# Cortex\n\nIntro text here.\n\n## Architecture\n\nUse Harper for storage.`;
 			const ingest = new SynapseIngest();
 			const result = await ingest.post({
 				source: 'claude_code',

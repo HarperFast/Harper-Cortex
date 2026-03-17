@@ -1,4 +1,4 @@
-# Harper-Cortex
+# Cortex
 
 An agent-agnostic AI memory system using Harper Fabric as the vector database and MCP for AI agent connectivity.
 
@@ -7,7 +7,7 @@ An agent-agnostic AI memory system using Harper Fabric as the vector database an
 - **Runtime**: Harper (Node.js-based, ES modules)
 - **Database**: Harper Fabric with HNSW vector indexing
 - **Classification**: Anthropic Claude Haiku 3.5 (`claude-haiku-3-5-20241022`)
-- **Embeddings**: Voyage AI `voyage-3` (1024-dim)
+- **Embeddings**: `@xenova/transformers` with `all-MiniLM-L6-v2` (384-dim, Harper-native ONNX)
 - **Ingestion**: Slack Events API webhooks
 - **AI Bridge**: Harper MCP Server + `mcp-remote`
 - **Tests**: Node.js built-in test runner (`node:test`)
@@ -30,7 +30,7 @@ npm run deploy # Deploy to Harper Fabric
 
 ## Architecture
 
-Slack webhook -> classify (Claude) + embed (Voyage AI) -> store in Memory table -> query via MCP from Claude Desktop/Cursor.
+Slack webhook -> classify (Claude) + embed (@xenova/transformers) -> store in Memory table -> query via MCP from Claude Desktop/Cursor.
 
 ## Synapse
 
@@ -50,7 +50,7 @@ Universal Context Broker — ingests development context from any AI tool (Claud
 
 ### Conventions
 
-- SynapseEntry table follows same patterns as Memory (HNSW vector index, classification via Claude Haiku, embeddings via Voyage AI)
+- SynapseEntry table follows same patterns as Memory (HNSW vector index, classification via Claude Haiku, embeddings via @xenova/transformers)
 - Use renamed import: `const { SynapseEntry: SynapseEntryBase } = tables;`
 - All Synapse queries must filter on `projectId`
 - Default status filter is `active` (excludes superseded/archived)

@@ -30,27 +30,21 @@ mock.module('@anthropic-ai/sdk', {
 	},
 });
 
-const mockEmbed = mock.fn();
-mock.module('voyageai', {
+const mockExtractor = mock.fn();
+mock.module('@xenova/transformers', {
 	namedExports: {
-		VoyageAIClient: class VoyageAIClient {
-			constructor() {}
-			embed(...args) {
-				return mockEmbed(...args);
-			}
-		},
+		pipeline: mock.fn(async () => mockExtractor),
 	},
 });
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
-process.env.VOYAGE_API_KEY = 'test-key';
 
 const { SynapseSearch } = await import('../resources.js');
 
 describe('SynapseSearch', () => {
 	beforeEach(() => {
 		mockSynapseSearch.mock.resetCalls();
-		mockEmbed.mock.resetCalls();
+		mockExtractor.mock.resetCalls();
 	});
 
 	it('returns error for missing query', async () => {
@@ -84,9 +78,8 @@ describe('SynapseSearch', () => {
 	});
 
 	it('performs vector search with valid query and projectId', async () => {
-		const fakeEmbedding = new Array(1024).fill(0.5);
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: fakeEmbedding }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0.5),
 		}));
 
 		const fakeResult = {
@@ -111,8 +104,8 @@ describe('SynapseSearch', () => {
 	});
 
 	it('always filters by projectId and status: active', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
@@ -133,8 +126,8 @@ describe('SynapseSearch', () => {
 	});
 
 	it('respects the limit parameter', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
@@ -149,8 +142,8 @@ describe('SynapseSearch', () => {
 	});
 
 	it('caps limit at 100', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
@@ -165,8 +158,8 @@ describe('SynapseSearch', () => {
 	});
 
 	it('applies type filter when valid', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
@@ -183,8 +176,8 @@ describe('SynapseSearch', () => {
 	});
 
 	it('ignores invalid type filter', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
@@ -200,8 +193,8 @@ describe('SynapseSearch', () => {
 	});
 
 	it('applies source filter when valid', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;

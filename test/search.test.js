@@ -30,20 +30,14 @@ mock.module('@anthropic-ai/sdk', {
 	},
 });
 
-const mockEmbed = mock.fn();
-mock.module('voyageai', {
+const mockExtractor = mock.fn();
+mock.module('@xenova/transformers', {
 	namedExports: {
-		VoyageAIClient: class VoyageAIClient {
-			constructor() {}
-			embed(...args) {
-				return mockEmbed(...args);
-			}
-		},
+		pipeline: mock.fn(async () => mockExtractor),
 	},
 });
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
-process.env.VOYAGE_API_KEY = 'test-key';
 
 const { MemorySearch } = await import('../resources.js');
 
@@ -71,9 +65,8 @@ describe('MemorySearch', () => {
 	});
 
 	it('performs vector search with valid query', async () => {
-		const fakeEmbedding = new Array(1024).fill(0.5);
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: fakeEmbedding }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0.5),
 		}));
 
 		const fakeResult = {
@@ -98,8 +91,8 @@ describe('MemorySearch', () => {
 	});
 
 	it('respects the limit parameter', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
@@ -114,8 +107,8 @@ describe('MemorySearch', () => {
 	});
 
 	it('caps limit at 100', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
@@ -130,8 +123,8 @@ describe('MemorySearch', () => {
 	});
 
 	it('applies classification filter for hybrid search', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
@@ -151,8 +144,8 @@ describe('MemorySearch', () => {
 	});
 
 	it('applies multiple filters as array', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
@@ -171,8 +164,8 @@ describe('MemorySearch', () => {
 	});
 
 	it('defaults limit to 10 for invalid values', async () => {
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: new Array(1024).fill(0) }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;

@@ -43,7 +43,7 @@ Edit the Claude Desktop configuration file:
 ```json
 {
 	"mcpServers": {
-		"harper-cortex": {
+		"cortex": {
 			"command": "npx",
 			"args": [
 				"-y",
@@ -72,7 +72,7 @@ This returns `{ "jwt": "...", "refreshToken": "..." }`. Use the JWT in your conf
 ```json
 {
 	"mcpServers": {
-		"harper-cortex": {
+		"cortex": {
 			"command": "npx",
 			"args": [
 				"-y",

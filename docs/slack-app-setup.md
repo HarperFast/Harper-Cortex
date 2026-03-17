@@ -1,12 +1,12 @@
 # Slack App Setup Guide
 
-This guide walks you through creating and configuring a Slack app to send messages to Harper-Cortex.
+This guide walks you through creating and configuring a Slack app to send messages to Cortex.
 
 ## Step 1: Create the Slack App
 
 1. Go to [api.slack.com/apps](https://api.slack.com/apps)
 2. Click **Create New App** > **From scratch**
-3. Name it (e.g., "Harper-Cortex Bot") and select your workspace
+3. Name it (e.g., "Cortex Bot") and select your workspace
 4. Click **Create App**
 
 ## Step 2: Configure Bot Token Scopes
@@ -60,7 +60,7 @@ If Slack asks you to reinstall the app after changing scopes or events, do so.
 In each Slack channel you want monitored, type:
 
 ```
-/invite @Harper-Cortex Bot
+/invite @Cortex Bot
 ```
 
 (Use whatever name you gave your app in Step 1.)

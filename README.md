@@ -1,4 +1,4 @@
-# Harper-Cortex
+# Cortex
 
 A persistent, agent-agnostic AI memory system powered by [Harper Fabric](https://harper.fast). Clone, configure your API keys, deploy, and give all your AI tools a shared brain.
 
@@ -62,8 +62,8 @@ Create your free cluster at [fabric.harper.fast](https://fabric.harper.fast):
 ### 2. Clone and install
 
 ```bash
-git clone https://github.com/HarperFast/Harper-Cortex.git
-cd Harper-Cortex
+git clone https://github.com/HarperFast/Cortex.git
+cd Cortex
 npm install -g harperdb   # Install the Harper runtime (one-time)
 npm install               # Install project dependencies
 ```
@@ -75,7 +75,6 @@ Sign up for these services and grab your API keys. All have free tiers.
 | Service       | Sign Up                                                 | What You Need                                                                                        |
 | ------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | **Anthropic** | [console.anthropic.com](https://console.anthropic.com/) | API key (used for message classification)                                                            |
-| **Voyage AI** | [dash.voyageai.com](https://dash.voyageai.com/)         | API key (used for vector embeddings)                                                                 |
 | **Slack**     | [api.slack.com/apps](https://api.slack.com/apps)        | Create a Slack app. See [docs/slack-app-setup.md](docs/slack-app-setup.md) for the full walkthrough. |
 
 ### 4. Configure environment
@@ -123,13 +122,12 @@ See [docs/mcp-setup.md](docs/mcp-setup.md) for configuration instructions.
 | Variable               | Required        | Description                                                              |
 | ---------------------- | --------------- | ------------------------------------------------------------------------ |
 | `ANTHROPIC_API_KEY`    | Yes             | Anthropic API key for Claude (message classification)                    |
-| `VOYAGE_API_KEY`       | Yes             | Voyage AI API key (vector embedding generation)                          |
 | `SLACK_SIGNING_SECRET` | For Slack       | Slack app signing secret (webhook verification)                          |
 | `SLACK_BOT_TOKEN`      | For Slack       | Slack bot user OAuth token (`xoxb-...`)                                  |
 | `CLI_TARGET`           | For deploy      | Harper Fabric cluster URL (e.g., `https://cluster.org.harperfabric.com`) |
 | `CLI_TARGET_USERNAME`  | For deploy      | Harper cluster admin username                                            |
 | `CLI_TARGET_PASSWORD`  | For deploy      | Harper cluster admin password                                            |
-| `SYNAPSE_ENDPOINT`     | For Synapse CLI | Base URL of Harper-Cortex deployment                                     |
+| `SYNAPSE_ENDPOINT`     | For Synapse CLI | Base URL of Cortex deployment                                            |
 | `SYNAPSE_PROJECT`      | For Synapse CLI | Project ID to scope context entries                                      |
 | `SYNAPSE_AUTH`         | For Synapse CLI | Authorization header (e.g. `Basic dXNlcjpwYXNz`)                         |
 
@@ -207,7 +205,7 @@ Tests use Node.js built-in test runner with module mocking. No extra test depend
 
 1. **A source sends an event** via webhook (e.g. Slack message, GitHub issue, Linear task)
 2. **Classification**: Claude Haiku categorizes the content (decision, action_item, knowledge, etc.) and extracts entities (people, projects, technologies)
-3. **Embedding**: Voyage AI generates a 1024-dimensional vector embedding
+3. **Embedding**: A local ONNX model (`all-MiniLM-L6-v2`) generates a 384-dimensional vector embedding — no API key required
 4. **Storage**: Raw text, classification, entities, and embedding are stored in the Memory table with HNSW vector indexing
 5. **Retrieval**: Any MCP-connected AI client queries the Memory table using hybrid search (vector similarity + attribute filters)
 
@@ -215,13 +213,13 @@ Tests use Node.js built-in test runner with module mocking. No extra test depend
 
 1. **Ingest**: `synapse sync` reads your tool context files (CLAUDE.md, `.cursor/rules/`, `.windsurf/rules/`, `copilot-instructions.md`) and POSTs them to `/SynapseIngest`
 2. **Parse**: Each source format is split into discrete entries; duplicate content is deduplicated via content hash
-3. **Classify + embed**: Each entry is classified into a type (`intent`, `constraint`, `artifact`, `history`) and embedded with Voyage AI
+3. **Classify + embed**: Each entry is classified into a type (`intent`, `constraint`, `artifact`, `history`) and embedded locally with `all-MiniLM-L6-v2`
 4. **Storage**: Entries are stored in the SynapseEntry table with HNSW vector indexing, scoped by `projectId`
 5. **Retrieval**: `synapse search` or any MCP client queries `/SynapseSearch`; `synapse emit` formats entries back into any target tool's native format
 
 ## Supported Integrations
 
-This repo ships with Slack + Anthropic + Voyage AI as the default stack. The architecture is designed to be swappable - add a new webhook resource class for any ingestion source, or change the LLM/embedding provider in `resources.js`.
+This repo ships with Slack + Anthropic + local ONNX embeddings as the default stack. The architecture is designed to be swappable — add a new webhook resource class for any ingestion source, or change the LLM/embedding provider in `resources.js`.
 
 ### Ingestion Sources
 
@@ -254,12 +252,13 @@ Swap the classification model by changing `CLASSIFICATION_MODEL` in `resources.j
 
 Swap the embedding provider by changing `generateEmbedding()` in `resources.js`. If you change the vector dimensions, re-embed all existing records.
 
-| Provider           | Recommended Model      | Dimensions | Trade-off                       |
-| ------------------ | ---------------------- | ---------- | ------------------------------- |
-| **Voyage AI**      | voyage-3               | 1024       | Anthropic-recommended (default) |
-| **OpenAI**         | text-embedding-3-small | 1536       | Most widely adopted             |
-| **Cohere**         | embed-v4               | 1024       | Strong multilingual support     |
-| **Ollama** (local) | nomic-embed-text       | 768        | Full privacy, zero API cost     |
+| Provider                  | Recommended Model      | Dimensions | Trade-off                              |
+| ------------------------- | ---------------------- | ---------- | -------------------------------------- |
+| **@xenova/transformers**  | all-MiniLM-L6-v2       | 384        | Local ONNX, no API key (default)       |
+| **Voyage AI**             | voyage-3               | 1024       | High quality, requires API key         |
+| **OpenAI**                | text-embedding-3-small | 1536       | Most widely adopted                    |
+| **Cohere**                | embed-v4               | 1024       | Strong multilingual support            |
+| **Ollama** (local)        | nomic-embed-text       | 768        | Full privacy, zero API cost            |
 
 ### MCP Clients (Retrieval)
 
@@ -275,7 +274,7 @@ Any MCP-compliant AI client can connect to the Harper MCP Server and query your 
 
 ## Synapse: Universal Context Broker
 
-Synapse extends Harper-Cortex into a **Universal Context Broker** — a system that bridges context across AI development tools. When you switch from Claude Code to Cursor, or add a new team member, the "Why" behind architectural decisions is normally lost. Synapse captures it.
+Synapse extends Cortex into a **Universal Context Broker** — a system that bridges context across AI development tools. When you switch from Claude Code to Cursor, or add a new team member, the "Why" behind architectural decisions is normally lost. Synapse captures it.
 
 ```
   INGEST (Tool → Harper)              EMIT (Harper → Tool)
@@ -311,7 +310,7 @@ Synapse extends Harper-Cortex into a **Universal Context Broker** — a system t
 # Install globally after cloning
 npm install -g .
 
-# Sync your context files to Harper-Cortex
+# Sync your context files to Cortex
 SYNAPSE_PROJECT=my-app synapse sync
 
 # Search across all context

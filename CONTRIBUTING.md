@@ -1,4 +1,4 @@
-# Contributing to Harper-Cortex
+# Contributing to Cortex
 
 Thanks for your interest in contributing. This guide covers how to get set up, make changes, and submit a pull request.
 
@@ -6,8 +6,8 @@ Thanks for your interest in contributing. This guide covers how to get set up, m
 
 1. Fork the repository and clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/Harper-Cortex.git
-   cd Harper-Cortex
+   git clone https://github.com/YOUR_USERNAME/Cortex.git
+   cd Cortex
    ```
 
 2. Install dependencies:

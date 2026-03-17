@@ -28,35 +28,28 @@ mock.module('@anthropic-ai/sdk', {
 	},
 });
 
-const mockEmbed = mock.fn();
-mock.module('voyageai', {
+const mockExtractor = mock.fn();
+mock.module('@xenova/transformers', {
 	namedExports: {
-		VoyageAIClient: class VoyageAIClient {
-			constructor() {}
-			embed(...args) {
-				return mockEmbed(...args);
-			}
-		},
+		pipeline: mock.fn(async () => mockExtractor),
 	},
 });
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
-process.env.VOYAGE_API_KEY = 'test-key';
 
 const { generateEmbedding } = await import('../resources.js');
 
 describe('generateEmbedding', () => {
 	it('returns a vector array for valid text', async () => {
-		const fakeEmbedding = new Array(1024).fill(0.1);
-		mockEmbed.mock.mockImplementation(async () => ({
-			data: [{ embedding: fakeEmbedding }],
+		mockExtractor.mock.mockImplementation(async () => ({
+			data: new Float32Array(384).fill(0.1),
 		}));
 
 		const result = await generateEmbedding('Hello world');
 
 		assert.ok(Array.isArray(result));
-		assert.equal(result.length, 1024);
-		assert.equal(result[0], 0.1);
+		assert.equal(result.length, 384);
+		assert.ok(Math.abs(result[0] - 0.1) < 1e-6);
 	});
 
 	it('throws for empty string', async () => {
@@ -87,26 +80,27 @@ describe('generateEmbedding', () => {
 		);
 	});
 
-	it('propagates API errors', async () => {
-		mockEmbed.mock.mockImplementation(async () => {
-			throw new Error('Voyage API error');
+	it('propagates pipeline errors', async () => {
+		mockExtractor.mock.mockImplementation(async () => {
+			throw new Error('Pipeline error');
 		});
 
 		await assert.rejects(
 			() => generateEmbedding('valid text'),
-			{ message: 'Voyage API error' },
+			{ message: 'Pipeline error' },
 		);
 	});
 
-	it('calls Voyage AI with correct model and input format', async () => {
-		mockEmbed.mock.resetCalls();
-		mockEmbed.mock.mockImplementation(async (params) => {
-			assert.deepEqual(params.input, ['test message']);
-			assert.equal(params.model, 'voyage-3');
-			return { data: [{ embedding: new Array(1024).fill(0) }] };
+	it('calls pipeline with correct model and extractor with correct options', async () => {
+		mockExtractor.mock.resetCalls();
+		mockExtractor.mock.mockImplementation(async (_text, opts) => {
+			assert.equal(opts.pooling, 'mean');
+			assert.equal(opts.normalize, true);
+			return { data: new Float32Array(384).fill(0) };
 		});
 
 		await generateEmbedding('test message');
-		assert.equal(mockEmbed.mock.callCount(), 1);
+		assert.equal(mockExtractor.mock.callCount(), 1);
+		assert.equal(mockExtractor.mock.calls[0].arguments[0], 'test message');
 	});
 });

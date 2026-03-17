@@ -39,19 +39,13 @@ mock.module('@anthropic-ai/sdk', {
 	},
 });
 
-mock.module('voyageai', {
+mock.module('@xenova/transformers', {
 	namedExports: {
-		VoyageAIClient: class VoyageAIClient {
-			constructor() {}
-			async embed() {
-				return { data: [{ embedding: new Array(1024).fill(0.1) }] };
-			}
-		},
+		pipeline: mock.fn(async () => async () => ({ data: new Float32Array(384).fill(0.1) })),
 	},
 });
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
-process.env.VOYAGE_API_KEY = 'test-key';
 
 const { verifySlackSignature, SlackWebhook } = await import('../resources.js');
 

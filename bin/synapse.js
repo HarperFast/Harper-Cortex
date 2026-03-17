@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Synapse CLI — Universal Context Broker for Harper-Cortex
+ * Synapse CLI — Universal Context Broker for Cortex
  *
  * Commands:
  *   synapse sync              Discover and ingest context files
@@ -10,7 +10,7 @@
  *   synapse status            Show entry counts by type and source
  *
  * Environment:
- *   SYNAPSE_ENDPOINT   Base URL of your Harper-Cortex deployment
+ *   SYNAPSE_ENDPOINT   Base URL of your Cortex deployment
  *   SYNAPSE_PROJECT    Project ID to scope entries
  *   SYNAPSE_AUTH       Authorization header value (e.g. "Basic dXNlcjpwYXNz")
  */
@@ -337,7 +337,7 @@ async function cmdWatch() {
 
 function printHelp() {
 	console.log(`
-Synapse — Universal Context Broker for Harper-Cortex
+Synapse — Universal Context Broker for Cortex
 
 Usage:
   synapse <command> [options]
@@ -359,7 +359,7 @@ Search options:
   --type <type>          Filter by type: intent, constraint, artifact, history
 
 Environment variables:
-  SYNAPSE_ENDPOINT       Harper-Cortex base URL (default: http://localhost:9926)
+  SYNAPSE_ENDPOINT       Cortex base URL (default: http://localhost:9926)
   SYNAPSE_PROJECT        Project ID (required for all commands)
   SYNAPSE_AUTH           Authorization header value (e.g. "Basic dXNlcjpwYXNz")
 

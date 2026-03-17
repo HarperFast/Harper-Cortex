@@ -1,10 +1,10 @@
-# Synapse: Universal Context Broker for Harper-Cortex
+# Synapse: Universal Context Broker for Cortex
 
 ## Context
 
 AI development tools (Claude Code, Cursor, Windsurf, Copilot) each build their own "contextual debt" — session history, rules files, memory banks — that is invisible to other tools. When engineers switch harnesses, the "Why" behind architectural decisions is lost.
 
-Synapse transforms Harper-Cortex into a **Universal Context Broker**: any tool can write structured context to Harper, and any other tool can read it in its native format. Harper becomes the single source of truth for development context.
+Synapse transforms Cortex into a **Universal Context Broker**: any tool can write structured context to Harper, and any other tool can read it in its native format. Harper becomes the single source of truth for development context.
 
 ## Architecture Overview
 
@@ -106,7 +106,7 @@ Accepts `{ source, content, projectId, parentId?, references? }`:
 
 1. Validates input
 2. Calls source-specific **parser** to split content into entries
-3. For each entry: classify (Claude Haiku) + embed (Voyage AI) in parallel
+3. For each entry: classify (Claude Haiku) + embed (all-MiniLM-L6-v2 via @xenova/transformers) in parallel
 4. Stores as SynapseEntry records
 
 **Parsers** (one per tool):
@@ -222,4 +222,4 @@ After each phase:
 - `npm test` — all existing + new tests pass
 - `npm run dev` — endpoints respond at `localhost:9926`
 - Manual: POST to `/SynapseIngest` with a CLAUDE.md, then `/SynapseSearch` to retrieve, then `/SynapseEmit --target cursor` to format
-- After Phase 4: `synapse sync && synapse search "architecture" && synapse emit --target cursor` in the Harper-Cortex project itself
+- After Phase 4: `synapse sync && synapse search "architecture" && synapse emit --target cursor` in the Cortex project itself

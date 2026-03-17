@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Resource, tables } from 'harperdb';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import { VoyageAIClient } from 'voyageai';
+import { pipeline } from '@xenova/transformers';
 
 const { Memory, SynapseEntry: SynapseEntryBase } = tables;
 
@@ -20,15 +20,12 @@ function getAnthropicClient() {
 	return anthropicClient;
 }
 
-let voyageClient;
-function getVoyageClient() {
-	if (!voyageClient) {
-		if (!process.env.VOYAGE_API_KEY) {
-			throw new Error('VOYAGE_API_KEY environment variable is required');
-		}
-		voyageClient = new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY });
+let embeddingPipeline;
+async function getEmbeddingPipeline() {
+	if (!embeddingPipeline) {
+		embeddingPipeline = await pipeline('feature-extraction', EMBEDDING_MODEL);
 	}
-	return voyageClient;
+	return embeddingPipeline;
 }
 
 // ---------------------------------------------------------------------------
@@ -59,7 +56,7 @@ function log(level, message, context = {}) {
 // ---------------------------------------------------------------------------
 
 const CLASSIFICATION_MODEL = 'claude-haiku-3-5-20241022';
-const EMBEDDING_MODEL = 'voyage-3';
+const EMBEDDING_MODEL = 'Xenova/all-MiniLM-L6-v2';
 const DEFAULT_SEARCH_LIMIT = 10;
 const MAX_SEARCH_LIMIT = 100;
 
@@ -147,7 +144,7 @@ function createFallbackClassification(text) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: Generate embedding using Voyage AI
+// Helper: Generate embedding using local ONNX model (Harper-native, no API key)
 // ---------------------------------------------------------------------------
 
 export async function generateEmbedding(text) {
@@ -155,13 +152,9 @@ export async function generateEmbedding(text) {
 		throw new Error('Cannot generate embedding for empty text');
 	}
 
-	const client = getVoyageClient();
-	const response = await client.embed({
-		input: [text],
-		model: EMBEDDING_MODEL,
-	});
-
-	return response.data[0].embedding;
+	const extractor = await getEmbeddingPipeline();
+	const output = await extractor(text, { pooling: 'mean', normalize: true });
+	return Array.from(output.data);
 }
 
 // ---------------------------------------------------------------------------
@@ -601,7 +594,7 @@ const synapseEmitters = {
 		const lines = [
 			`# Synapse Context: ${projectId}`,
 			``,
-			`_Synced from Harper-Cortex at ${new Date().toISOString()}_`,
+			`_Synced from Cortex at ${new Date().toISOString()}_`,
 			``,
 		];
 
