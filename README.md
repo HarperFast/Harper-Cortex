@@ -252,13 +252,13 @@ Swap the classification model by changing `CLASSIFICATION_MODEL` in `resources.j
 
 Swap the embedding provider by changing `generateEmbedding()` in `resources.js`. If you change the vector dimensions, re-embed all existing records.
 
-| Provider                  | Recommended Model      | Dimensions | Trade-off                              |
-| ------------------------- | ---------------------- | ---------- | -------------------------------------- |
-| **@xenova/transformers**  | all-MiniLM-L6-v2       | 384        | Local ONNX, no API key (default)       |
-| **Voyage AI**             | voyage-3               | 1024       | High quality, requires API key         |
-| **OpenAI**                | text-embedding-3-small | 1536       | Most widely adopted                    |
-| **Cohere**                | embed-v4               | 1024       | Strong multilingual support            |
-| **Ollama** (local)        | nomic-embed-text       | 768        | Full privacy, zero API cost            |
+| Provider                 | Recommended Model      | Dimensions | Trade-off                        |
+| ------------------------ | ---------------------- | ---------- | -------------------------------- |
+| **@xenova/transformers** | all-MiniLM-L6-v2       | 384        | Local ONNX, no API key (default) |
+| **Voyage AI**            | voyage-3               | 1024       | High quality, requires API key   |
+| **OpenAI**               | text-embedding-3-small | 1536       | Most widely adopted              |
+| **Cohere**               | embed-v4               | 1024       | Strong multilingual support      |
+| **Ollama** (local)       | nomic-embed-text       | 768        | Full privacy, zero API cost      |
 
 ### MCP Clients (Retrieval)
 

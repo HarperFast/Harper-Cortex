@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { pipeline } from '@xenova/transformers';
 import { Resource, tables } from 'harperdb';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import { pipeline } from '@xenova/transformers';
 
 const { Memory, SynapseEntry: SynapseEntryBase } = tables;
 
