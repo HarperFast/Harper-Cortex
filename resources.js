@@ -231,13 +231,14 @@ export class SlackWebhook extends Resource {
 		return { status: 200, message: 'accepted' };
 	}
 
-	async _processMessage(data) {
+	async _processMessage(data, agentId) {
 		const event = data.event;
 
 		log('info', 'Processing Slack message', {
 			channel: event.channel,
 			user: event.user,
 			eventId: data.event_id,
+			agentId,
 		});
 
 		// Check for duplicate event_id to prevent re-processing
@@ -269,6 +270,7 @@ export class SlackWebhook extends Resource {
 			channelName: event.channel_name || '',
 			authorId: event.user,
 			authorName: '',
+			agentId: agentId || null,
 			classification: classification.category,
 			entities: classification.entities,
 			embedding,
@@ -353,6 +355,9 @@ export class MemorySearch extends Resource {
 			}
 			if (filters.authorId) {
 				conditions.push({ attribute: 'authorId', comparator: 'equals', value: filters.authorId });
+			}
+			if (filters.agentId) {
+				conditions.push({ attribute: 'agentId', comparator: 'equals', value: filters.agentId });
 			}
 
 			if (conditions.length === 1) {
