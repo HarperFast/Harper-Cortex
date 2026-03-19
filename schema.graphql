@@ -26,6 +26,7 @@ type Memory @table {
 	channelName: String
 	authorId: String @indexed
 	authorName: String
+	agentId: String @indexed
 	classification: String @indexed
 	entities: Any
 	embedding: [Float] @indexed(type: "HNSW", distance: "cosine")
