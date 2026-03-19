@@ -369,7 +369,13 @@ export class MemorySearch extends Resource {
 
 		const results = [];
 		for await (const record of Memory.search(searchParams)) {
-			results.push(record);
+			// Normalize Harper's cosine distance (0-2 range) to similarity score (0-1)
+			// For normalized vectors, distance = 2 - 2*similarity, so similarity = 1 - distance/2
+			const similarity = Math.max(0, 1 - (record.$distance || 0) / 2);
+			results.push({
+				...record,
+				similarity,
+			});
 		}
 
 		return { results, count: results.length };
@@ -810,7 +816,13 @@ export class SynapseSearch extends Resource {
 
 		const results = [];
 		for await (const record of SynapseEntryBase.search(searchParams)) {
-			results.push(record);
+			// Normalize Harper's cosine distance (0-2 range) to similarity score (0-1)
+			// For normalized vectors, distance = 2 - 2*similarity, so similarity = 1 - distance/2
+			const similarity = Math.max(0, 1 - (record.$distance || 0) / 2);
+			results.push({
+				...record,
+				similarity,
+			});
 		}
 
 		return { results, count: results.length };
