@@ -30,6 +30,8 @@ type Memory @table {
 	classification: String @indexed
 	entities: Any
 	embedding: [Float] @indexed(type: "HNSW", distance: "cosine")
+	contentHash: String @indexed
+	supersedes: String @indexed
 	summary: String
 	timestamp: Date @indexed
 	threadTs: String
