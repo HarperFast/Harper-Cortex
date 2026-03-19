@@ -1,0 +1,213 @@
+import assert from 'node:assert/strict';
+import { describe, it, mock } from 'node:test';
+
+const mockSearch = mock.fn(function*() {});
+
+class MockMemory {
+	static put = mock.fn();
+	static search = mockSearch;
+	static get = mock.fn();
+}
+
+class MockSynapseEntry {
+	static put = mock.fn();
+	static search = mock.fn(function*() {});
+	static get = mock.fn();
+}
+
+mock.module('harperdb', {
+	namedExports: {
+		Resource: class Resource {},
+		tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+	},
+});
+
+mock.module('@anthropic-ai/sdk', {
+	defaultExport: class Anthropic {
+		constructor() {
+			this.messages = { create: mock.fn() };
+		}
+	},
+});
+
+const mockExtractor = mock.fn();
+mock.module('@xenova/transformers', {
+	namedExports: {
+		pipeline: mock.fn(async () => mockExtractor),
+	},
+});
+
+process.env.ANTHROPIC_API_KEY = 'test-key';
+
+const { VectorSearch } = await import('../resources.js');
+
+describe('VectorSearch', () => {
+	it('returns error for missing vector', async () => {
+		const search = new VectorSearch();
+		const result = await search.post({});
+
+		assert.ok(result.error);
+		assert.ok(result.error.includes('vector is required'));
+	});
+
+	it('returns error for non-array vector', async () => {
+		const search = new VectorSearch();
+		const result = await search.post({ vector: 'not-an-array' });
+
+		assert.ok(result.error);
+		assert.ok(result.error.includes('array'));
+	});
+
+	it('returns error for vector with non-numeric values', async () => {
+		const search = new VectorSearch();
+		const result = await search.post({ vector: [0.1, 'not-a-number', 0.3] });
+
+		assert.ok(result.error);
+		assert.ok(result.error.includes('numeric'));
+	});
+
+	it('performs vector search with valid vector', async () => {
+		const fakeResult = {
+			id: 'test-id',
+			rawText: 'We decided to use Redis',
+			classification: 'decision',
+			summary: 'Team chose Redis',
+			$distance: 0.12,
+		};
+
+		mockSearch.mock.mockImplementation(function*() {
+			yield fakeResult;
+		});
+
+		const testVector = Array(384).fill(0.5);
+		const search = new VectorSearch();
+		const result = await search.post({ vector: testVector });
+
+		assert.ok(result.results);
+		assert.equal(result.count, 1);
+		assert.equal(result.results[0].id, 'test-id');
+		assert.equal(result.results[0].$distance, 0.12);
+	});
+
+	it('respects the limit parameter', async () => {
+		let capturedParams;
+		mockSearch.mock.mockImplementation(function*(params) {
+			capturedParams = params;
+		});
+
+		const testVector = Array(384).fill(0.5);
+		const search = new VectorSearch();
+		await search.post({ vector: testVector, limit: 7 });
+
+		assert.equal(capturedParams.limit, 7);
+	});
+
+	it('caps limit at 100', async () => {
+		let capturedParams;
+		mockSearch.mock.mockImplementation(function*(params) {
+			capturedParams = params;
+		});
+
+		const testVector = Array(384).fill(0.5);
+		const search = new VectorSearch();
+		await search.post({ vector: testVector, limit: 500 });
+
+		assert.equal(capturedParams.limit, 100);
+	});
+
+	it('uses provided vector as search target', async () => {
+		let capturedParams;
+		mockSearch.mock.mockImplementation(function*(params) {
+			capturedParams = params;
+		});
+
+		const testVector = Array(384).fill(0.25);
+		const search = new VectorSearch();
+		await search.post({ vector: testVector });
+
+		assert.deepEqual(capturedParams.sort.target, testVector);
+		assert.equal(capturedParams.sort.attribute, 'embedding');
+	});
+
+	it('applies classification filter', async () => {
+		let capturedParams;
+		mockSearch.mock.mockImplementation(function*(params) {
+			capturedParams = params;
+		});
+
+		const testVector = Array(384).fill(0.5);
+		const search = new VectorSearch();
+		await search.post({
+			vector: testVector,
+			filter: { classification: 'action_item' },
+		});
+
+		assert.ok(capturedParams.conditions);
+		assert.equal(capturedParams.conditions.attribute, 'classification');
+		assert.equal(capturedParams.conditions.value, 'action_item');
+	});
+
+	it('applies multiple filters as array', async () => {
+		let capturedParams;
+		mockSearch.mock.mockImplementation(function*(params) {
+			capturedParams = params;
+		});
+
+		const testVector = Array(384).fill(0.5);
+		const search = new VectorSearch();
+		await search.post({
+			vector: testVector,
+			filter: { source: 'slack', channelId: 'C1234' },
+		});
+
+		assert.ok(Array.isArray(capturedParams.conditions));
+		assert.equal(capturedParams.conditions.length, 2);
+	});
+
+	it('defaults limit to 10 for invalid values', async () => {
+		let capturedParams;
+		mockSearch.mock.mockImplementation(function*(params) {
+			capturedParams = params;
+		});
+
+		const testVector = Array(384).fill(0.5);
+		const search = new VectorSearch();
+		await search.post({ vector: testVector, limit: 'invalid' });
+
+		assert.equal(capturedParams.limit, 10);
+	});
+
+	it('handles multiple search results', async () => {
+		const results = [
+			{
+				id: 'result-1',
+				rawText: 'First result',
+				$distance: 0.1,
+			},
+			{
+				id: 'result-2',
+				rawText: 'Second result',
+				$distance: 0.15,
+			},
+			{
+				id: 'result-3',
+				rawText: 'Third result',
+				$distance: 0.2,
+			},
+		];
+
+		mockSearch.mock.mockImplementation(function*() {
+			for (const r of results) {
+				yield r;
+			}
+		});
+
+		const testVector = Array(384).fill(0.5);
+		const search = new VectorSearch();
+		const result = await search.post({ vector: testVector });
+
+		assert.equal(result.count, 3);
+		assert.equal(result.results.length, 3);
+		assert.deepEqual(result.results, results);
+	});
+});
