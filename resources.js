@@ -369,10 +369,193 @@ export class MemorySearch extends Resource {
 
 		const results = [];
 		for await (const record of Memory.search(searchParams)) {
-			results.push(record);
+			// Normalize Harper's cosine distance (0-2 range) to similarity score (0-1)
+			// For normalized vectors, distance = 2 - 2*similarity, so similarity = 1 - distance/2
+			const similarity = Math.max(0, 1 - (record.$distance || 0) / 2);
+			results.push({
+				...record,
+				similarity,
+			});
 		}
 
 		return { results, count: results.length };
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Memory Count - Count memories with optional filtering
+// ---------------------------------------------------------------------------
+
+export class MemoryCount extends Resource {
+	async post(data) {
+		const { filters } = data || {};
+
+		log('info', 'Memory count requested', { filters });
+
+		const searchParams = {
+			select: ['id'],
+		};
+
+		// Apply optional filters
+		if (filters && typeof filters === 'object') {
+			const conditions = [];
+
+			if (filters.source) {
+				conditions.push({ attribute: 'source', comparator: 'equals', value: filters.source });
+			}
+			if (filters.classification) {
+				conditions.push({ attribute: 'classification', comparator: 'equals', value: filters.classification });
+			}
+			if (filters.channelId) {
+				conditions.push({ attribute: 'channelId', comparator: 'equals', value: filters.channelId });
+			}
+			if (filters.authorId) {
+				conditions.push({ attribute: 'authorId', comparator: 'equals', value: filters.authorId });
+			}
+			if (filters.agentId) {
+				conditions.push({ attribute: 'agentId', comparator: 'equals', value: filters.agentId });
+			}
+
+			if (conditions.length === 1) {
+				searchParams.conditions = conditions[0];
+			} else if (conditions.length > 1) {
+				searchParams.conditions = conditions;
+			}
+		}
+
+		let count = 0;
+		for await (const _record of Memory.search(searchParams)) {
+			count++;
+		}
+
+		log('info', 'Memory count complete', { count, filters });
+		return { count };
+	}
+}
+
+// ---------------------------------------------------------------------------
+// MemoryStore - Dedup-aware storage (SHA-256 hash + vector similarity)
+// ---------------------------------------------------------------------------
+
+export class MemoryStore extends Resource {
+	async post(data) {
+		const { text, dedupThreshold, agentId, channelId, authorId, sourceType, threadTs, supersedes } = data || {};
+
+		if (!text || typeof text !== 'string' || text.trim().length === 0) {
+			return { error: 'text is required and must be a non-empty string' };
+		}
+
+		log('info', 'Memory store requested', { dedupThreshold, hasDedup: !!dedupThreshold });
+
+		// Compute SHA-256 hash of normalized text for fast exact-match dedup
+		const contentHash = createHash('sha256').update(text.trim().toLowerCase()).digest('hex');
+
+		// Fast path: exact content hash match
+		for await (const existing of Memory.search({
+			select: ['id', 'summary', 'rawText'],
+			conditions: { attribute: 'contentHash', comparator: 'equals', value: contentHash },
+			limit: 1,
+		})) {
+			log('info', 'Exact duplicate detected via content hash', { existingId: existing.id });
+			return {
+				stored: false,
+				deduplicated: true,
+				action: 'exact_match',
+				id: existing.id,
+				summary: existing.summary,
+			};
+		}
+
+		// Generate embedding for the new memory
+		const embedding = await generateEmbedding(text);
+
+		// If dedupThreshold is provided, search for similar existing memories
+		if (dedupThreshold && typeof dedupThreshold === 'number' && dedupThreshold > 0) {
+			const searchParams = {
+				select: ['id', 'rawText', 'summary', '$distance'],
+				sort: {
+					attribute: 'embedding',
+					target: embedding,
+				},
+				limit: 5,
+			};
+
+			// Optionally filter by agentId or channelId to scope dedup
+			if (agentId) {
+				searchParams.conditions = { attribute: 'agentId', comparator: 'equals', value: agentId };
+			}
+
+			const potentialDupes = [];
+			for await (const record of Memory.search(searchParams)) {
+				// Normalize distance to similarity score
+				const similarity = Math.max(0, 1 - (record.$distance || 0) / 2);
+				if (similarity >= dedupThreshold) {
+					potentialDupes.push({ ...record, similarity });
+				}
+			}
+
+			if (potentialDupes.length > 0) {
+				const duplicate = potentialDupes[0]; // Highest similarity (first result from HNSW)
+				log('info', 'Memory deduplicated', {
+					dedupId: duplicate.id,
+					similarity: duplicate.similarity,
+					threshold: dedupThreshold,
+				});
+				return {
+					stored: false,
+					deduplicated: true,
+					action: 'fuzzy_match',
+					id: duplicate.id,
+					summary: duplicate.summary,
+					similarity: duplicate.similarity,
+					supersedes: null,
+				};
+			}
+		}
+
+		// No duplicate found (or dedup disabled), classify and store new memory
+		const [classification] = await Promise.all([
+			classifyMessage(text),
+		]);
+
+		const memoryRecord = {
+			rawText: text,
+			contentHash,
+			source: 'api',
+			sourceType: sourceType || 'direct',
+			channelId: channelId || '',
+			channelName: '',
+			authorId: authorId || '',
+			authorName: '',
+			agentId: agentId || null,
+			classification: classification.category,
+			entities: classification.entities,
+			embedding,
+			summary: classification.summary,
+			timestamp: new Date(),
+			threadTs: threadTs || null,
+			supersedes: supersedes || null,
+			metadata: {
+				embedding_model: EMBEDDING_MODEL,
+				stored_via: 'memory_store',
+				dedup_threshold: dedupThreshold || null,
+			},
+		};
+
+		await Memory.put(memoryRecord);
+
+		log('info', 'Memory stored', {
+			classification: classification.category,
+			dedupThreshold,
+			contentHash,
+		});
+
+		return {
+			stored: true,
+			deduplicated: false,
+			id: memoryRecord.id || 'generated',
+			summary: memoryRecord.summary,
+		};
 	}
 }
 
@@ -759,7 +942,13 @@ export class SynapseSearch extends Resource {
 
 		const results = [];
 		for await (const record of SynapseEntryBase.search(searchParams)) {
-			results.push(record);
+			// Normalize Harper's cosine distance (0-2 range) to similarity score (0-1)
+			// For normalized vectors, distance = 2 - 2*similarity, so similarity = 1 - distance/2
+			const similarity = Math.max(0, 1 - (record.$distance || 0) / 2);
+			results.push({
+				...record,
+				similarity,
+			});
 		}
 
 		return { results, count: results.length };
