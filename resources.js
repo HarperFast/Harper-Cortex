@@ -377,6 +377,57 @@ export class MemorySearch extends Resource {
 }
 
 // ---------------------------------------------------------------------------
+// Memory Count - Count memories with optional filtering
+// ---------------------------------------------------------------------------
+
+export class MemoryCount extends Resource {
+	async post(data) {
+		const { filters } = data || {};
+
+		log('info', 'Memory count requested', { filters });
+
+		const searchParams = {
+			select: ['id'],
+		};
+
+		// Apply optional filters
+		if (filters && typeof filters === 'object') {
+			const conditions = [];
+
+			if (filters.source) {
+				conditions.push({ attribute: 'source', comparator: 'equals', value: filters.source });
+			}
+			if (filters.classification) {
+				conditions.push({ attribute: 'classification', comparator: 'equals', value: filters.classification });
+			}
+			if (filters.channelId) {
+				conditions.push({ attribute: 'channelId', comparator: 'equals', value: filters.channelId });
+			}
+			if (filters.authorId) {
+				conditions.push({ attribute: 'authorId', comparator: 'equals', value: filters.authorId });
+			}
+			if (filters.agentId) {
+				conditions.push({ attribute: 'agentId', comparator: 'equals', value: filters.agentId });
+			}
+
+			if (conditions.length === 1) {
+				searchParams.conditions = conditions[0];
+			} else if (conditions.length > 1) {
+				searchParams.conditions = conditions;
+			}
+		}
+
+		let count = 0;
+		for await (const _record of Memory.search(searchParams)) {
+			count++;
+		}
+
+		log('info', 'Memory count complete', { count, filters });
+		return { count };
+	}
+}
+
+// ---------------------------------------------------------------------------
 // 3. Memory Table Extension - Strip embeddings from GET responses
 // ---------------------------------------------------------------------------
 
