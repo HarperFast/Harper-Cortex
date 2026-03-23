@@ -308,7 +308,11 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 
 		assert.equal(result.count, 2);
 		assert.equal(result.results.length, 2);
-		assert.deepEqual(result.results, fakeResults);
+		// MemorySearch normalizes $distance to similarity (1 - distance/2)
+		assert.deepEqual(result.results, fakeResults.map(r => ({
+			...r,
+			similarity: Math.max(0, 1 - (r.$distance || 0) / 2),
+		})));
 	});
 
 	it('applies single indexed filter without wrapping in array', async () => {

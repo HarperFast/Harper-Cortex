@@ -56,19 +56,15 @@ describe('MemoryStore with Deduplication', () => {
 		mockSearch.mockImplementation(function*() {});
 
 		mockClassifyResult.current = vi.fn(async () => ({
-			messages: {
-				create: vi.fn(async () => ({
-					content: [
-						{
-							text: JSON.stringify({
-								category: 'decision',
-								entities: { people: [], projects: [], technologies: [], topics: [] },
-								summary: 'Test decision',
-							}),
-						},
-					],
-				})),
-			},
+			content: [
+				{
+					text: JSON.stringify({
+						category: 'decision',
+						entities: { people: [], projects: [], technologies: [], topics: [] },
+						summary: 'Test decision',
+					}),
+				},
+			],
 		}));
 
 		const store = new MemoryStore();
@@ -91,6 +87,9 @@ describe('MemoryStore with Deduplication', () => {
 			$distance: 0.1, // High similarity: 1 - 0.1/2 = 0.95
 		};
 
+		// First call: content hash search → no match
+		mockSearch.mockImplementationOnce(function*() {});
+		// Second call: similarity search → yield high-similarity record
 		mockSearch.mockImplementation(function*() {
 			yield existingRecord;
 		});
@@ -119,24 +118,23 @@ describe('MemoryStore with Deduplication', () => {
 			$distance: 1.5, // Low similarity: 1 - 1.5/2 = 0.25
 		};
 
+		// First call: content hash search → no match
+		mockSearch.mockImplementationOnce(function*() {});
+		// Second call: similarity search → yield low-similarity record (below threshold)
 		mockSearch.mockImplementation(function*() {
 			yield dissimilarRecord;
 		});
 
 		mockClassifyResult.current = vi.fn(async () => ({
-			messages: {
-				create: vi.fn(async () => ({
-					content: [
-						{
-							text: JSON.stringify({
-								category: 'question',
-								entities: { people: [], projects: [], technologies: [], topics: [] },
-								summary: 'New question',
-							}),
-						},
-					],
-				})),
-			},
+			content: [
+				{
+					text: JSON.stringify({
+						category: 'question',
+						entities: { people: [], projects: [], technologies: [], topics: [] },
+						summary: 'New question',
+					}),
+				},
+			],
 		}));
 
 		const store = new MemoryStore();
@@ -172,26 +170,24 @@ describe('MemoryStore with Deduplication', () => {
 	});
 
 	it('stores metadata including dedup threshold', async () => {
+		MockMemory.put.mockClear();
 		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0.5),
 		}));
 
+		// Two search calls: content hash check (no match) + similarity search (no match)
 		mockSearch.mockImplementation(function*() {});
 
 		mockClassifyResult.current = vi.fn(async () => ({
-			messages: {
-				create: vi.fn(async () => ({
-					content: [
-						{
-							text: JSON.stringify({
-								category: 'knowledge',
-								entities: { people: [], projects: [], technologies: [], topics: [] },
-								summary: 'Stored knowledge',
-							}),
-						},
-					],
-				})),
-			},
+			content: [
+				{
+					text: JSON.stringify({
+						category: 'knowledge',
+						entities: { people: [], projects: [], technologies: [], topics: [] },
+						summary: 'Stored knowledge',
+					}),
+				},
+			],
 		}));
 
 		const store = new MemoryStore();

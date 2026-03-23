@@ -198,6 +198,9 @@ export class MemorySearch extends Resource {
 			if (filters.agentId) {
 				conditions.push({ attribute: 'agentId', comparator: 'equals', value: filters.agentId });
 			}
+			if (filters.sourceType) {
+				conditions.push({ attribute: 'sourceType', comparator: 'equals', value: filters.sourceType });
+			}
 
 			if (conditions.length === 1) {
 				searchParams.conditions = conditions[0];
