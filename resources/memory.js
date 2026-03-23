@@ -11,7 +11,7 @@ import {
 	log,
 } from './shared.js';
 
-const { Memory } = tables;
+const { Memory, SynapseEntry } = tables;
 
 // ---------------------------------------------------------------------------
 // Legacy Anthropic client (used when CLASSIFICATION_PROVIDER is not set
@@ -406,5 +406,110 @@ export class MemoryTable extends Memory {
 			return rest;
 		}
 		return record;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// VectorSearch - Raw vector similarity search (bypasses text embedding step)
+// Used by langchain-harper's HarperVectorStore to search with pre-computed vectors
+// ---------------------------------------------------------------------------
+
+export class VectorSearch extends Resource {
+	async post(data) {
+		const { vector, limit, filter } = data || {};
+
+		if (!vector) {
+			return { error: 'vector is required' };
+		}
+		if (!Array.isArray(vector)) {
+			return { error: 'vector must be an array' };
+		}
+		if (vector.some((v) => typeof v !== 'number' || isNaN(v))) {
+			return { error: 'vector must contain only numeric values' };
+		}
+
+		const searchLimit = Math.min(
+			Math.max(1, parseInt(limit, 10) || DEFAULT_SEARCH_LIMIT),
+			MAX_SEARCH_LIMIT,
+		);
+
+		const searchParams = {
+			sort: {
+				attribute: 'embedding',
+				target: vector,
+			},
+			limit: searchLimit,
+		};
+
+		if (filter && typeof filter === 'object') {
+			const conditions = Object.entries(filter).map(([attribute, value]) => ({
+				attribute,
+				comparator: 'equals',
+				value,
+			}));
+			if (conditions.length === 1) {
+				searchParams.conditions = conditions[0];
+			} else if (conditions.length > 1) {
+				searchParams.conditions = conditions;
+			}
+		}
+
+		log('info', 'Vector search requested', { dimensions: vector.length, limit: searchLimit });
+
+		const results = [];
+		for await (const record of Memory.search(searchParams)) {
+			results.push(record);
+		}
+
+		return { results, count: results.length };
+	}
+}
+
+// ---------------------------------------------------------------------------
+// BatchUpsert - Bulk insert/update records into Memory or SynapseEntry tables
+// ---------------------------------------------------------------------------
+
+const BATCH_ALLOWED_TABLES = { Memory, SynapseEntry };
+
+export class BatchUpsert extends Resource {
+	async post(data) {
+		const { table, records } = data || {};
+
+		if (!table) {
+			return { error: 'table is required' };
+		}
+		if (!records) {
+			return { error: 'records is required' };
+		}
+		if (!Array.isArray(records)) {
+			return { error: 'records must be an array' };
+		}
+		if (!BATCH_ALLOWED_TABLES[table]) {
+			return { error: `table must be one of: Memory, SynapseEntry` };
+		}
+
+		const tableRef = BATCH_ALLOWED_TABLES[table];
+		let stored = 0;
+		const errors = [];
+
+		for (let i = 0; i < records.length; i++) {
+			const record = records[i];
+
+			if (!record || typeof record !== 'object' || Array.isArray(record)) {
+				errors.push({ index: i, record: `record-${i}`, error: 'record must be an object' });
+				continue;
+			}
+
+			try {
+				await tableRef.put(record);
+				stored++;
+			} catch (err) {
+				errors.push({ index: i, record: record.id || `record-${i}`, error: err.message });
+			}
+		}
+
+		log('info', 'Batch upsert complete', { table, stored, errorCount: errors.length });
+
+		return { stored, errors };
 	}
 }

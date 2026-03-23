@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { describe, it, vi } from 'vitest';
+import { beforeEach, describe, it, vi } from 'vitest';
 
 const { mockMemoryPut, mockSynapseEntryPut, MockMemory, MockSynapseEntry } = vi.hoisted(() => {
 	const mockMemoryPut = vi.fn();
@@ -32,6 +32,11 @@ process.env.ANTHROPIC_API_KEY = 'test-key';
 const { BatchUpsert } = await import('../resources.js');
 
 describe('BatchUpsert', () => {
+	beforeEach(() => {
+		mockMemoryPut.mockClear();
+		mockSynapseEntryPut.mockClear();
+	});
+
 	it('returns error for missing table', async () => {
 		const batchUpsert = new BatchUpsert();
 		const result = await batchUpsert.post({ records: [] });
