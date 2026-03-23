@@ -1,42 +1,31 @@
 import assert from 'node:assert/strict';
-import { describe, it, mock } from 'node:test';
+import { describe, it, vi } from 'vitest';
 
-const mockMemoryPut = mock.fn();
-const mockSynapseEntryPut = mock.fn();
-
-class MockMemory {
-	static put = mockMemoryPut;
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-class MockSynapseEntry {
-	static put = mockSynapseEntryPut;
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-mock.module('harperdb', {
-	namedExports: {
-		Resource: class Resource {},
-		tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
-	},
+const { mockMemoryPut, mockSynapseEntryPut, MockMemory, MockSynapseEntry } = vi.hoisted(() => {
+	const mockMemoryPut = vi.fn();
+	const mockSynapseEntryPut = vi.fn();
+	class MockMemory { static put = mockMemoryPut; static search = vi.fn(function*() {}); static get = vi.fn(); }
+	class MockSynapseEntry { static put = mockSynapseEntryPut; static search = vi.fn(function*() {}); static get = vi.fn(); }
+	return { mockMemoryPut, mockSynapseEntryPut, MockMemory, MockSynapseEntry };
 });
 
-mock.module('@anthropic-ai/sdk', {
-	defaultExport: class Anthropic {
+vi.mock('harperdb', () => ({
+	Resource: class Resource {},
+	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+}));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class Anthropic {
 		constructor() {
-			this.messages = { create: mock.fn() };
+			this.messages = { create: vi.fn() };
 		}
 	},
-});
+}));
 
-const mockExtractor = mock.fn();
-mock.module('@xenova/transformers', {
-	namedExports: {
-		pipeline: mock.fn(async () => mockExtractor),
-	},
-});
+const { mockExtractor } = vi.hoisted(() => ({ mockExtractor: vi.fn() }));
+vi.mock('@xenova/transformers', () => ({
+	pipeline: vi.fn(async () => mockExtractor),
+}));
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
 
@@ -93,7 +82,7 @@ describe('BatchUpsert', () => {
 	});
 
 	it('upserts records to Memory table', async () => {
-		mockMemoryPut.mock.mockImplementation(async () => {});
+		mockMemoryPut.mockImplementation(async () => {});
 
 		const records = [
 			{ id: 'mem-1', rawText: 'First memory', classification: 'decision' },
@@ -108,11 +97,11 @@ describe('BatchUpsert', () => {
 
 		assert.equal(result.stored, 2);
 		assert.deepEqual(result.errors, []);
-		assert.equal(mockMemoryPut.mock.callCount(), 2);
+		assert.equal(mockMemoryPut.mock.calls.length, 2);
 	});
 
 	it('upserts records to SynapseEntry table', async () => {
-		mockSynapseEntryPut.mock.mockImplementation(async () => {});
+		mockSynapseEntryPut.mockImplementation(async () => {});
 
 		const records = [
 			{ id: 'syn-1', projectId: 'proj-1', type: 'intent', content: 'First entry' },
@@ -127,12 +116,12 @@ describe('BatchUpsert', () => {
 
 		assert.equal(result.stored, 2);
 		assert.deepEqual(result.errors, []);
-		assert.equal(mockSynapseEntryPut.mock.callCount(), 2);
+		assert.equal(mockSynapseEntryPut.mock.calls.length, 2);
 	});
 
 	it('handles individual record failures gracefully', async () => {
 		const callCount = { count: 0 };
-		mockMemoryPut.mock.mockImplementation(async (record) => {
+		mockMemoryPut.mockImplementation(async (record) => {
 			callCount.count++;
 			if (callCount.count === 2) {
 				throw new Error('Database constraint violation');
@@ -158,7 +147,7 @@ describe('BatchUpsert', () => {
 	});
 
 	it('validates individual records are objects', async () => {
-		mockMemoryPut.mock.mockImplementation(async () => {});
+		mockMemoryPut.mockImplementation(async () => {});
 
 		const records = [
 			{ id: 'mem-1', rawText: 'Valid' },
@@ -179,7 +168,7 @@ describe('BatchUpsert', () => {
 	});
 
 	it('processes large batches', async () => {
-		mockMemoryPut.mock.mockImplementation(async () => {});
+		mockMemoryPut.mockImplementation(async () => {});
 
 		const records = Array.from({ length: 100 }, (_, i) => ({
 			id: `mem-${i}`,
@@ -194,11 +183,11 @@ describe('BatchUpsert', () => {
 
 		assert.equal(result.stored, 100);
 		assert.deepEqual(result.errors, []);
-		assert.equal(mockMemoryPut.mock.callCount(), 100);
+		assert.equal(mockMemoryPut.mock.calls.length, 100);
 	});
 
 	it('stores records without requiring id field', async () => {
-		mockMemoryPut.mock.mockImplementation(async () => {});
+		mockMemoryPut.mockImplementation(async () => {});
 
 		const records = [
 			{ rawText: 'First memory', classification: 'decision' },
@@ -217,7 +206,7 @@ describe('BatchUpsert', () => {
 
 	it('uses fallback names in error messages for records without id', async () => {
 		const callCount = { count: 0 };
-		mockMemoryPut.mock.mockImplementation(async () => {
+		mockMemoryPut.mockImplementation(async () => {
 			callCount.count++;
 			if (callCount.count === 2) {
 				throw new Error('Test error');

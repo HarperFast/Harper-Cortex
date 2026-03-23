@@ -1,41 +1,30 @@
 import assert from 'node:assert/strict';
-import { describe, it, mock } from 'node:test';
+import { describe, it, vi } from 'vitest';
 
-const mockSearch = mock.fn(function*() {});
-
-class MockMemory {
-	static put = mock.fn();
-	static search = mockSearch;
-	static get = mock.fn();
-}
-
-class MockSynapseEntry {
-	static put = mock.fn();
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-mock.module('harperdb', {
-	namedExports: {
-		Resource: class Resource {},
-		tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
-	},
+const { mockSearch, MockMemory, MockSynapseEntry, mockExtractor } = vi.hoisted(() => {
+	const mockSearch = vi.fn(function*() {});
+	class MockMemory { static put = vi.fn(); static search = mockSearch; static get = vi.fn(); }
+	class MockSynapseEntry { static put = vi.fn(); static search = vi.fn(function*() {}); static get = vi.fn(); }
+	const mockExtractor = vi.fn();
+	return { mockSearch, MockMemory, MockSynapseEntry, mockExtractor };
 });
 
-mock.module('@anthropic-ai/sdk', {
-	defaultExport: class Anthropic {
+vi.mock('harperdb', () => ({
+	Resource: class Resource {},
+	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+}));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class Anthropic {
 		constructor() {
-			this.messages = { create: mock.fn() };
+			this.messages = { create: vi.fn() };
 		}
 	},
-});
+}));
 
-const mockExtractor = mock.fn();
-mock.module('@xenova/transformers', {
-	namedExports: {
-		pipeline: mock.fn(async () => mockExtractor),
-	},
-});
+vi.mock('@xenova/transformers', () => ({
+	pipeline: vi.fn(async () => mockExtractor),
+}));
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
 
@@ -75,7 +64,7 @@ describe('VectorSearch', () => {
 			$distance: 0.12,
 		};
 
-		mockSearch.mock.mockImplementation(function*() {
+		mockSearch.mockImplementation(function*() {
 			yield fakeResult;
 		});
 
@@ -91,7 +80,7 @@ describe('VectorSearch', () => {
 
 	it('respects the limit parameter', async () => {
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -104,7 +93,7 @@ describe('VectorSearch', () => {
 
 	it('caps limit at 100', async () => {
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -117,7 +106,7 @@ describe('VectorSearch', () => {
 
 	it('uses provided vector as search target', async () => {
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -131,7 +120,7 @@ describe('VectorSearch', () => {
 
 	it('applies classification filter', async () => {
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -149,7 +138,7 @@ describe('VectorSearch', () => {
 
 	it('applies multiple filters as array', async () => {
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -166,7 +155,7 @@ describe('VectorSearch', () => {
 
 	it('defaults limit to 10 for invalid values', async () => {
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -196,7 +185,7 @@ describe('VectorSearch', () => {
 			},
 		];
 
-		mockSearch.mock.mockImplementation(function*() {
+		mockSearch.mockImplementation(function*() {
 			for (const r of results) {
 				yield r;
 			}

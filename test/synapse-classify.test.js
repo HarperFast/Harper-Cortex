@@ -1,39 +1,29 @@
 import assert from 'node:assert/strict';
-import { beforeEach, describe, it, mock } from 'node:test';
+import { beforeEach, describe, it, vi } from 'vitest';
 
-class MockMemory {
-	static put = mock.fn();
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-class MockSynapseEntry {
-	static put = mock.fn();
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-mock.module('harperdb', {
-	namedExports: {
-		Resource: class Resource {},
-		tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
-	},
+const { MockMemory, MockSynapseEntry, mockCreate } = vi.hoisted(() => {
+	const mockCreate = vi.fn();
+	class MockMemory { static put = vi.fn(); static search = vi.fn(function*() {}); static get = vi.fn(); }
+	class MockSynapseEntry { static put = vi.fn(); static search = vi.fn(function*() {}); static get = vi.fn(); }
+	return { MockMemory, MockSynapseEntry, mockCreate };
 });
 
-const mockCreate = mock.fn();
-mock.module('@anthropic-ai/sdk', {
-	defaultExport: class Anthropic {
+vi.mock('harperdb', () => ({
+	Resource: class Resource {},
+	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+}));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class Anthropic {
 		constructor() {
 			this.messages = { create: mockCreate };
 		}
 	},
-});
+}));
 
-mock.module('@xenova/transformers', {
-	namedExports: {
-		pipeline: mock.fn(async () => async () => ({ data: new Float32Array(384).fill(0.1) })),
-	},
-});
+vi.mock('@xenova/transformers', () => ({
+	pipeline: vi.fn(async () => async () => ({ data: new Float32Array(384).fill(0.1) })),
+}));
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
 
@@ -41,11 +31,11 @@ const { classifySynapseEntry } = await import('../resources.js');
 
 describe('classifySynapseEntry', () => {
 	beforeEach(() => {
-		mockCreate.mock.resetCalls();
+		mockCreate.mockClear();
 	});
 
 	it('returns a valid classification for normal text', async () => {
-		mockCreate.mock.mockImplementation(async () => ({
+		mockCreate.mockImplementation(async () => ({
 			content: [{
 				text: JSON.stringify({
 					type: 'intent',
@@ -87,7 +77,7 @@ describe('classifySynapseEntry', () => {
 	});
 
 	it('handles malformed JSON from LLM gracefully', async () => {
-		mockCreate.mock.mockImplementation(async () => ({
+		mockCreate.mockImplementation(async () => ({
 			content: [{ text: 'this is not json' }],
 		}));
 
@@ -98,7 +88,7 @@ describe('classifySynapseEntry', () => {
 	});
 
 	it('falls back when LLM returns an invalid type', async () => {
-		mockCreate.mock.mockImplementation(async () => ({
+		mockCreate.mockImplementation(async () => ({
 			content: [{
 				text: JSON.stringify({
 					type: 'invalid_type',
@@ -116,7 +106,7 @@ describe('classifySynapseEntry', () => {
 	});
 
 	it('handles API errors gracefully', async () => {
-		mockCreate.mock.mockImplementation(async () => {
+		mockCreate.mockImplementation(async () => {
 			throw new Error('API rate limited');
 		});
 
@@ -129,7 +119,7 @@ describe('classifySynapseEntry', () => {
 	it('accepts all four valid types', async () => {
 		const types = ['intent', 'constraint', 'artifact', 'history'];
 		for (const type of types) {
-			mockCreate.mock.mockImplementation(async () => ({
+			mockCreate.mockImplementation(async () => ({
 				content: [{
 					text: JSON.stringify({
 						type,

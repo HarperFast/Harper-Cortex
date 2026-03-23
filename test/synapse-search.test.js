@@ -1,41 +1,30 @@
 import assert from 'node:assert/strict';
-import { beforeEach, describe, it, mock } from 'node:test';
+import { beforeEach, describe, it, vi } from 'vitest';
 
-class MockMemory {
-	static put = mock.fn();
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-const mockSynapseSearch = mock.fn(function*() {});
-
-class MockSynapseEntry {
-	static put = mock.fn();
-	static search = mockSynapseSearch;
-	static get = mock.fn();
-}
-
-mock.module('harperdb', {
-	namedExports: {
-		Resource: class Resource {},
-		tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
-	},
+const { MockMemory, mockSynapseSearch, MockSynapseEntry, mockExtractor } = vi.hoisted(() => {
+	const mockSynapseSearch = vi.fn(function*() {});
+	const mockExtractor = vi.fn();
+	class MockMemory { static put = vi.fn(); static search = vi.fn(function*() {}); static get = vi.fn(); }
+	class MockSynapseEntry { static put = vi.fn(); static search = mockSynapseSearch; static get = vi.fn(); }
+	return { MockMemory, mockSynapseSearch, MockSynapseEntry, mockExtractor };
 });
 
-mock.module('@anthropic-ai/sdk', {
-	defaultExport: class Anthropic {
+vi.mock('harperdb', () => ({
+	Resource: class Resource {},
+	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+}));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class Anthropic {
 		constructor() {
-			this.messages = { create: mock.fn() };
+			this.messages = { create: vi.fn() };
 		}
 	},
-});
+}));
 
-const mockExtractor = mock.fn();
-mock.module('@xenova/transformers', {
-	namedExports: {
-		pipeline: mock.fn(async () => mockExtractor),
-	},
-});
+vi.mock('@xenova/transformers', () => ({
+	pipeline: vi.fn(async () => mockExtractor),
+}));
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
 
@@ -43,8 +32,8 @@ const { SynapseSearch } = await import('../resources.js');
 
 describe('SynapseSearch', () => {
 	beforeEach(() => {
-		mockSynapseSearch.mock.resetCalls();
-		mockExtractor.mock.resetCalls();
+		mockSynapseSearch.mockClear();
+		mockExtractor.mockClear();
 	});
 
 	it('returns error for missing query', async () => {
@@ -78,7 +67,7 @@ describe('SynapseSearch', () => {
 	});
 
 	it('performs vector search with valid query and projectId', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0.5),
 		}));
 
@@ -90,7 +79,7 @@ describe('SynapseSearch', () => {
 			$distance: 0.12,
 		};
 
-		mockSynapseSearch.mock.mockImplementation(function*() {
+		mockSynapseSearch.mockImplementation(function*() {
 			yield fakeResult;
 		});
 
@@ -104,12 +93,12 @@ describe('SynapseSearch', () => {
 	});
 
 	it('always filters by projectId and status: active', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSynapseSearch.mock.mockImplementation(function*(params) {
+		mockSynapseSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -126,12 +115,12 @@ describe('SynapseSearch', () => {
 	});
 
 	it('respects the limit parameter', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSynapseSearch.mock.mockImplementation(function*(params) {
+		mockSynapseSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -142,12 +131,12 @@ describe('SynapseSearch', () => {
 	});
 
 	it('caps limit at 100', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSynapseSearch.mock.mockImplementation(function*(params) {
+		mockSynapseSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -158,12 +147,12 @@ describe('SynapseSearch', () => {
 	});
 
 	it('applies type filter when valid', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSynapseSearch.mock.mockImplementation(function*(params) {
+		mockSynapseSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -176,12 +165,12 @@ describe('SynapseSearch', () => {
 	});
 
 	it('ignores invalid type filter', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSynapseSearch.mock.mockImplementation(function*(params) {
+		mockSynapseSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -193,12 +182,12 @@ describe('SynapseSearch', () => {
 	});
 
 	it('applies source filter when valid', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSynapseSearch.mock.mockImplementation(function*(params) {
+		mockSynapseSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 

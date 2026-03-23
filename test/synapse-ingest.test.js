@@ -1,42 +1,31 @@
 import assert from 'node:assert/strict';
-import { beforeEach, describe, it, mock } from 'node:test';
+import { beforeEach, describe, it, vi } from 'vitest';
 
-class MockMemory {
-	static put = mock.fn();
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-const mockSynapsePut = mock.fn();
-
-class MockSynapseEntry {
-	static put = mockSynapsePut;
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-mock.module('harperdb', {
-	namedExports: {
-		Resource: class Resource {},
-		tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
-	},
+const { MockMemory, mockSynapsePut, MockSynapseEntry, mockCreate, mockExtractor } = vi.hoisted(() => {
+	const mockSynapsePut = vi.fn();
+	const mockCreate = vi.fn();
+	const mockExtractor = vi.fn();
+	class MockMemory { static put = vi.fn(); static search = vi.fn(function*() {}); static get = vi.fn(); }
+	class MockSynapseEntry { static put = mockSynapsePut; static search = vi.fn(function*() {}); static get = vi.fn(); }
+	return { MockMemory, mockSynapsePut, MockSynapseEntry, mockCreate, mockExtractor };
 });
 
-const mockCreate = mock.fn();
-mock.module('@anthropic-ai/sdk', {
-	defaultExport: class Anthropic {
+vi.mock('harperdb', () => ({
+	Resource: class Resource {},
+	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+}));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class Anthropic {
 		constructor() {
 			this.messages = { create: mockCreate };
 		}
 	},
-});
+}));
 
-const mockExtractor = mock.fn();
-mock.module('@xenova/transformers', {
-	namedExports: {
-		pipeline: mock.fn(async () => mockExtractor),
-	},
-});
+vi.mock('@xenova/transformers', () => ({
+	pipeline: vi.fn(async () => mockExtractor),
+}));
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
 
@@ -44,11 +33,11 @@ const { SynapseIngest } = await import('../resources.js');
 
 describe('SynapseIngest', () => {
 	beforeEach(() => {
-		mockCreate.mock.resetCalls();
-		mockExtractor.mock.resetCalls();
-		mockSynapsePut.mock.resetCalls();
+		mockCreate.mockClear();
+		mockExtractor.mockClear();
+		mockSynapsePut.mockClear();
 
-		mockCreate.mock.mockImplementation(async () => ({
+		mockCreate.mockImplementation(async () => ({
 			content: [{
 				text: JSON.stringify({
 					type: 'intent',
@@ -59,11 +48,11 @@ describe('SynapseIngest', () => {
 			}],
 		}));
 
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0.1),
 		}));
 
-		mockSynapsePut.mock.mockImplementation(async () => {});
+		mockSynapsePut.mockImplementation(async () => {});
 	});
 
 	it('returns error for missing content', async () => {
@@ -107,7 +96,7 @@ describe('SynapseIngest', () => {
 
 		assert.equal(result.count, 1);
 		assert.ok(Array.isArray(result.stored));
-		assert.equal(mockSynapsePut.mock.callCount(), 1);
+		assert.equal(mockSynapsePut.mock.calls.length, 1);
 	});
 
 	it('stores each entry with correct fields', async () => {
@@ -118,7 +107,7 @@ describe('SynapseIngest', () => {
 			projectId: 'my-project',
 		});
 
-		const storedRecord = mockSynapsePut.mock.calls[0].arguments[0];
+		const storedRecord = mockSynapsePut.mock.calls[0][0];
 		assert.equal(storedRecord.projectId, 'my-project');
 		assert.equal(storedRecord.source, 'copilot');
 		assert.equal(storedRecord.status, 'active');
@@ -130,11 +119,11 @@ describe('SynapseIngest', () => {
 		const payload = { source: 'copilot', content: 'Always write tests.', projectId: 'my-project' };
 
 		await ingest.post(payload);
-		const firstId = mockSynapsePut.mock.calls[0].arguments[0].id;
+		const firstId = mockSynapsePut.mock.calls[0][0].id;
 
-		mockSynapsePut.mock.resetCalls();
+		mockSynapsePut.mockClear();
 		await ingest.post(payload);
-		const secondId = mockSynapsePut.mock.calls[0].arguments[0].id;
+		const secondId = mockSynapsePut.mock.calls[0][0].id;
 
 		assert.equal(firstId, secondId);
 		assert.equal(typeof firstId, 'string');
@@ -152,7 +141,7 @@ describe('SynapseIngest', () => {
 			});
 
 			assert.equal(result.count, 2);
-			assert.equal(mockSynapsePut.mock.callCount(), 2);
+			assert.equal(mockSynapsePut.mock.calls.length, 2);
 		});
 
 		it('parseClaudeCode preserves preamble before first heading', async () => {
@@ -165,9 +154,9 @@ describe('SynapseIngest', () => {
 			});
 
 			assert.equal(result.count, 2);
-			assert.equal(mockSynapsePut.mock.callCount(), 2);
+			assert.equal(mockSynapsePut.mock.calls.length, 2);
 			// First entry is the preamble
-			const preamble = mockSynapsePut.mock.calls[0].arguments[0];
+			const preamble = mockSynapsePut.mock.calls[0][0];
 			assert.ok(preamble.content.includes('Intro text here'));
 			assert.ok(!preamble.content.startsWith('## '));
 		});
@@ -194,7 +183,7 @@ describe('SynapseIngest', () => {
 			});
 
 			assert.equal(result.count, 1);
-			const stored = mockSynapsePut.mock.calls[0].arguments[0];
+			const stored = mockSynapsePut.mock.calls[0][0];
 			assert.equal(stored.sourceFormat, 'mdc');
 		});
 

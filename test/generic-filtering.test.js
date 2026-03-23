@@ -1,41 +1,30 @@
 import assert from 'node:assert/strict';
-import { describe, it, mock } from 'node:test';
+import { describe, it, vi, beforeEach } from 'vitest';
 
-const mockSearch = mock.fn(function*() {});
-
-class MockMemory {
-	static put = mock.fn();
-	static search = mockSearch;
-	static get = mock.fn();
-}
-
-class MockSynapseEntry {
-	static put = mock.fn();
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-mock.module('harperdb', {
-	namedExports: {
-		Resource: class Resource {},
-		tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
-	},
+const { mockSearch, MockMemory, MockSynapseEntry, mockExtractor } = vi.hoisted(() => {
+	const mockSearch = vi.fn(function*() {});
+	class MockMemory { static put = vi.fn(); static search = mockSearch; static get = vi.fn(); }
+	class MockSynapseEntry { static put = vi.fn(); static search = vi.fn(function*() {}); static get = vi.fn(); }
+	const mockExtractor = vi.fn();
+	return { mockSearch, MockMemory, MockSynapseEntry, mockExtractor };
 });
 
-mock.module('@anthropic-ai/sdk', {
-	defaultExport: class Anthropic {
+vi.mock('harperdb', () => ({
+	Resource: class Resource {},
+	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+}));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class Anthropic {
 		constructor() {
-			this.messages = { create: mock.fn() };
+			this.messages = { create: vi.fn() };
 		}
 	},
-});
+}));
 
-const mockExtractor = mock.fn();
-mock.module('@xenova/transformers', {
-	namedExports: {
-		pipeline: mock.fn(async () => mockExtractor),
-	},
-});
+vi.mock('@xenova/transformers', () => ({
+	pipeline: vi.fn(async () => mockExtractor),
+}));
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
 
@@ -43,16 +32,16 @@ const { MemorySearch } = await import('../resources.js');
 
 describe('MemorySearch - Generic Metadata Filtering', () => {
 	beforeEach(() => {
-		mockSearch.mock.resetCalls();
+		mockSearch.mockClear();
 	});
 
 	it('supports backward-compatible indexed field: source', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -69,12 +58,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('supports indexed field: sourceType', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -90,12 +79,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('supports indexed field: classification', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -111,12 +100,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('supports indexed field: channelId', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -132,12 +121,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('supports indexed field: authorId', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -153,12 +142,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('combines multiple indexed filters as array', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -181,12 +170,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('ignores null and undefined filter values', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -206,12 +195,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('iterates dynamically over filter keys', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -234,12 +223,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('skips non-indexed fields with warning log', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -258,12 +247,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('handles empty filter object gracefully', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -278,7 +267,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('returns results when filters are applied', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0.5),
 		}));
 
@@ -301,7 +290,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			},
 		];
 
-		mockSearch.mock.mockImplementation(function*() {
+		mockSearch.mockImplementation(function*() {
 			for (const r of fakeResults) {
 				yield r;
 			}
@@ -323,12 +312,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('applies single indexed filter without wrapping in array', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -344,12 +333,12 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 	});
 
 	it('maintains backward compatibility with old filter behavior', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 

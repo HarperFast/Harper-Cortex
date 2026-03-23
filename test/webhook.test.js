@@ -1,31 +1,23 @@
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { describe, it, mock } from 'node:test';
+import { describe, it, vi } from 'vitest';
 
-class MockMemory {
-	static put = mock.fn();
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-class MockSynapseEntry {
-	static put = mock.fn();
-	static search = mock.fn(function*() {});
-	static get = mock.fn();
-}
-
-mock.module('harperdb', {
-	namedExports: {
-		Resource: class Resource {},
-		tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
-	},
+const { MockMemory, MockSynapseEntry } = vi.hoisted(() => {
+	class MockMemory { static put = vi.fn(); static search = vi.fn(function*() {}); static get = vi.fn(); }
+	class MockSynapseEntry { static put = vi.fn(); static search = vi.fn(function*() {}); static get = vi.fn(); }
+	return { MockMemory, MockSynapseEntry };
 });
 
-mock.module('@anthropic-ai/sdk', {
-	defaultExport: class Anthropic {
+vi.mock('harperdb', () => ({
+	Resource: class Resource {},
+	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+}));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class Anthropic {
 		constructor() {
 			this.messages = {
-				create: mock.fn(async () => ({
+				create: vi.fn(async () => ({
 					content: [{
 						text: JSON.stringify({
 							category: 'discussion',
@@ -37,13 +29,11 @@ mock.module('@anthropic-ai/sdk', {
 			};
 		}
 	},
-});
+}));
 
-mock.module('@xenova/transformers', {
-	namedExports: {
-		pipeline: mock.fn(async () => async () => ({ data: new Float32Array(384).fill(0.1) })),
-	},
-});
+vi.mock('@xenova/transformers', () => ({
+	pipeline: vi.fn(async () => async () => ({ data: new Float32Array(384).fill(0.1) })),
+}));
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
 

@@ -1,35 +1,29 @@
 import assert from 'node:assert/strict';
-import { describe, it, mock } from 'node:test';
+import { describe, it, vi } from 'vitest';
 
-const mockSearch = mock.fn(function*() {});
-
-class MockMemory {
-	static put = mock.fn();
-	static search = mockSearch;
-	static get = mock.fn();
-}
-
-mock.module('harperdb', {
-	namedExports: {
-		Resource: class Resource {},
-		tables: { Memory: MockMemory, SynapseEntry: class {} },
-	},
+const { mockSearch, MockMemory } = vi.hoisted(() => {
+	const mockSearch = vi.fn(function*() {});
+	class MockMemory { static put = vi.fn(); static search = mockSearch; static get = vi.fn(); }
+	return { mockSearch, MockMemory };
 });
 
-mock.module('@anthropic-ai/sdk', {
-	defaultExport: class Anthropic {
+vi.mock('harperdb', () => ({
+	Resource: class Resource {},
+	tables: { Memory: MockMemory, SynapseEntry: class {} },
+}));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class Anthropic {
 		constructor() {
-			this.messages = { create: mock.fn() };
+			this.messages = { create: vi.fn() };
 		}
 	},
-});
+}));
 
-const mockExtractor = mock.fn();
-mock.module('@xenova/transformers', {
-	namedExports: {
-		pipeline: mock.fn(async () => mockExtractor),
-	},
-});
+const { mockExtractor } = vi.hoisted(() => ({ mockExtractor: vi.fn() }));
+vi.mock('@xenova/transformers', () => ({
+	pipeline: vi.fn(async () => mockExtractor),
+}));
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
 
@@ -37,7 +31,7 @@ const { MemoryCount } = await import('../resources.js');
 
 describe('MemoryCount', () => {
 	it('returns 0 for no memories', async () => {
-		mockSearch.mock.mockImplementation(function*() {});
+		mockSearch.mockImplementation(function*() {});
 
 		const counter = new MemoryCount();
 		const result = await counter.post({});
@@ -46,7 +40,7 @@ describe('MemoryCount', () => {
 	});
 
 	it('counts all memories without filters', async () => {
-		mockSearch.mock.mockImplementation(function*() {
+		mockSearch.mockImplementation(function*() {
 			yield { id: '1' };
 			yield { id: '2' };
 			yield { id: '3' };
@@ -59,13 +53,13 @@ describe('MemoryCount', () => {
 	});
 
 	it('applies source filter', async () => {
-		mockSearch.mock.mockImplementation(function*() {
+		mockSearch.mockImplementation(function*() {
 			yield { id: '1' };
 			yield { id: '2' };
 		});
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 			yield { id: '1' };
 			yield { id: '2' };
@@ -80,12 +74,12 @@ describe('MemoryCount', () => {
 	});
 
 	it('applies classification filter', async () => {
-		mockSearch.mock.mockImplementation(function*() {
+		mockSearch.mockImplementation(function*() {
 			yield { id: '1' };
 		});
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 			yield { id: '1' };
 		});
@@ -99,12 +93,12 @@ describe('MemoryCount', () => {
 	});
 
 	it('combines multiple filters', async () => {
-		mockSearch.mock.mockImplementation(function*() {
+		mockSearch.mockImplementation(function*() {
 			yield { id: '1' };
 		});
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 			yield { id: '1' };
 		});
@@ -121,7 +115,7 @@ describe('MemoryCount', () => {
 
 	it('applies agentId filter', async () => {
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 			yield { id: '1' };
 			yield { id: '2' };

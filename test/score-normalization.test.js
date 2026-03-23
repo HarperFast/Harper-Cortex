@@ -1,41 +1,30 @@
 import assert from 'node:assert/strict';
-import { describe, it, mock } from 'node:test';
+import { describe, it, vi } from 'vitest';
 
-const mockSearch = mock.fn(function*() {});
-
-class MockMemory {
-	static put = mock.fn();
-	static search = mockSearch;
-	static get = mock.fn();
-}
-
-class MockSynapseEntry {
-	static put = mock.fn();
-	static search = mockSearch;
-	static get = mock.fn();
-}
-
-mock.module('harperdb', {
-	namedExports: {
-		Resource: class Resource {},
-		tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
-	},
+const { mockSearch, MockMemory, MockSynapseEntry, mockExtractor } = vi.hoisted(() => {
+	const mockSearch = vi.fn(function*() {});
+	class MockMemory { static put = vi.fn(); static search = mockSearch; static get = vi.fn(); }
+	class MockSynapseEntry { static put = vi.fn(); static search = mockSearch; static get = vi.fn(); }
+	const mockExtractor = vi.fn();
+	return { mockSearch, MockMemory, MockSynapseEntry, mockExtractor };
 });
 
-mock.module('@anthropic-ai/sdk', {
-	defaultExport: class Anthropic {
+vi.mock('harperdb', () => ({
+	Resource: class Resource {},
+	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+}));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class Anthropic {
 		constructor() {
-			this.messages = { create: mock.fn() };
+			this.messages = { create: vi.fn() };
 		}
 	},
-});
+}));
 
-const mockExtractor = mock.fn();
-mock.module('@xenova/transformers', {
-	namedExports: {
-		pipeline: mock.fn(async () => mockExtractor),
-	},
-});
+vi.mock('@xenova/transformers', () => ({
+	pipeline: vi.fn(async () => mockExtractor),
+}));
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
 
@@ -44,11 +33,11 @@ const { MemorySearch, SynapseSearch } = await import('../resources.js');
 describe('Score Normalization', () => {
 	describe('MemorySearch', () => {
 		it('normalizes distance 0 to similarity 1 (perfect match)', async () => {
-			mockExtractor.mock.mockImplementation(async () => ({
+			mockExtractor.mockImplementation(async () => ({
 				data: new Float32Array(384).fill(0.5),
 			}));
 
-			mockSearch.mock.mockImplementation(function*() {
+			mockSearch.mockImplementation(function*() {
 				yield {
 					id: 'test-id',
 					rawText: 'test message',
@@ -64,11 +53,11 @@ describe('Score Normalization', () => {
 		});
 
 		it('normalizes distance 1 to similarity 0.5 (moderate match)', async () => {
-			mockExtractor.mock.mockImplementation(async () => ({
+			mockExtractor.mockImplementation(async () => ({
 				data: new Float32Array(384).fill(0.5),
 			}));
 
-			mockSearch.mock.mockImplementation(function*() {
+			mockSearch.mockImplementation(function*() {
 				yield {
 					id: 'test-id',
 					rawText: 'test message',
@@ -84,11 +73,11 @@ describe('Score Normalization', () => {
 		});
 
 		it('normalizes distance 2 to similarity 0 (no match)', async () => {
-			mockExtractor.mock.mockImplementation(async () => ({
+			mockExtractor.mockImplementation(async () => ({
 				data: new Float32Array(384).fill(0.5),
 			}));
 
-			mockSearch.mock.mockImplementation(function*() {
+			mockSearch.mockImplementation(function*() {
 				yield {
 					id: 'test-id',
 					rawText: 'test message',
@@ -104,11 +93,11 @@ describe('Score Normalization', () => {
 		});
 
 		it('clamps negative similarity to 0', async () => {
-			mockExtractor.mock.mockImplementation(async () => ({
+			mockExtractor.mockImplementation(async () => ({
 				data: new Float32Array(384).fill(0.5),
 			}));
 
-			mockSearch.mock.mockImplementation(function*() {
+			mockSearch.mockImplementation(function*() {
 				yield {
 					id: 'test-id',
 					rawText: 'test message',
@@ -124,11 +113,11 @@ describe('Score Normalization', () => {
 		});
 
 		it('includes similarity alongside $distance in results', async () => {
-			mockExtractor.mock.mockImplementation(async () => ({
+			mockExtractor.mockImplementation(async () => ({
 				data: new Float32Array(384).fill(0.5),
 			}));
 
-			mockSearch.mock.mockImplementation(function*() {
+			mockSearch.mockImplementation(function*() {
 				yield {
 					id: 'test-id',
 					rawText: 'test message',
@@ -148,11 +137,11 @@ describe('Score Normalization', () => {
 
 	describe('SynapseSearch', () => {
 		it('normalizes distance for Synapse entries', async () => {
-			mockExtractor.mock.mockImplementation(async () => ({
+			mockExtractor.mockImplementation(async () => ({
 				data: new Float32Array(384).fill(0.5),
 			}));
 
-			mockSearch.mock.mockImplementation(function*() {
+			mockSearch.mockImplementation(function*() {
 				yield {
 					id: 'synapse-1',
 					type: 'intent',
@@ -171,11 +160,11 @@ describe('Score Normalization', () => {
 		});
 
 		it('returns normalized scores for multiple Synapse results', async () => {
-			mockExtractor.mock.mockImplementation(async () => ({
+			mockExtractor.mockImplementation(async () => ({
 				data: new Float32Array(384).fill(0.5),
 			}));
 
-			mockSearch.mock.mockImplementation(function*() {
+			mockSearch.mockImplementation(function*() {
 				yield {
 					id: 'synapse-1',
 					type: 'intent',

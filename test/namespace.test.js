@@ -1,35 +1,29 @@
 import assert from 'node:assert/strict';
-import { describe, it, mock } from 'node:test';
+import { describe, it, vi } from 'vitest';
 
-const mockSearch = mock.fn(function*() {});
-
-class MockMemory {
-	static put = mock.fn();
-	static search = mockSearch;
-	static get = mock.fn();
-}
-
-mock.module('harperdb', {
-	namedExports: {
-		Resource: class Resource {},
-		tables: { Memory: MockMemory, SynapseEntry: class {} },
-	},
+const { mockSearch, MockMemory, mockExtractor } = vi.hoisted(() => {
+	const mockSearch = vi.fn(function*() {});
+	class MockMemory { static put = vi.fn(); static search = mockSearch; static get = vi.fn(); }
+	const mockExtractor = vi.fn();
+	return { mockSearch, MockMemory, mockExtractor };
 });
 
-mock.module('@anthropic-ai/sdk', {
-	defaultExport: class Anthropic {
+vi.mock('harperdb', () => ({
+	Resource: class Resource {},
+	tables: { Memory: MockMemory, SynapseEntry: class {} },
+}));
+
+vi.mock('@anthropic-ai/sdk', () => ({
+	default: class Anthropic {
 		constructor() {
-			this.messages = { create: mock.fn() };
+			this.messages = { create: vi.fn() };
 		}
 	},
-});
+}));
 
-const mockExtractor = mock.fn();
-mock.module('@xenova/transformers', {
-	namedExports: {
-		pipeline: mock.fn(async () => mockExtractor),
-	},
-});
+vi.mock('@xenova/transformers', () => ({
+	pipeline: vi.fn(async () => mockExtractor),
+}));
 
 process.env.ANTHROPIC_API_KEY = 'test-key';
 
@@ -37,12 +31,12 @@ const { MemorySearch } = await import('../resources.js');
 
 describe('MemorySearch with agentId', () => {
 	it('accepts agentId in filters', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0.5),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -58,12 +52,12 @@ describe('MemorySearch with agentId', () => {
 	});
 
 	it('combines agentId with other filters', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0.5),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
@@ -81,12 +75,12 @@ describe('MemorySearch with agentId', () => {
 	});
 
 	it('works without agentId (optional)', async () => {
-		mockExtractor.mock.mockImplementation(async () => ({
+		mockExtractor.mockImplementation(async () => ({
 			data: new Float32Array(384).fill(0.5),
 		}));
 
 		let capturedParams;
-		mockSearch.mock.mockImplementation(function*(params) {
+		mockSearch.mockImplementation(function*(params) {
 			capturedParams = params;
 		});
 
