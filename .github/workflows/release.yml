@@ -4,15 +4,21 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 permissions:
   contents: write
   issues: write
   pull-requests: write
+  id-token: write
 
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    environment: Release
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,6 +29,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+          registry-url: https://registry.npmjs.org
 
       - run: npm install
 
@@ -32,8 +39,39 @@ jobs:
       - name: Test
         run: npm test
 
+      # Cortex Core (GitHub release only, no npm publish)
       - name: Release Cortex
         working-directory: packages/cortex
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+      # cortex-client (npm publish + GitHub release)
+      - name: Release cortex-client
+        working-directory: packages/cortex-client
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
+
+      # openclaw-memory (npm publish + GitHub release)
+      - name: Release openclaw-memory
+        working-directory: packages/openclaw-memory
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
+
+      # cortex-mcp-server (npm publish + GitHub release)
+      - name: Release cortex-mcp-server
+        working-directory: packages/cortex-mcp-server
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
