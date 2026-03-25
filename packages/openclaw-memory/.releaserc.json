@@ -18,15 +18,12 @@
 			}
 		],
 		"@semantic-release/release-notes-generator",
-		[
-			"@semantic-release/npm",
-			{ "npmPublish": false }
-		],
+		"@semantic-release/npm",
 		[
 			"@semantic-release/git",
 			{
-				"assets": ["package.json", "package-lock.json"],
-				"message": "chore(release): cortex v${nextRelease.version} [skip ci]"
+				"assets": ["package.json"],
+				"message": "chore(release): openclaw-memory v${nextRelease.version} [skip ci]"
 			}
 		],
 		[
@@ -36,5 +33,5 @@
 			}
 		]
 	],
-	"tagFormat": "cortex-v${version}"
+	"tagFormat": "openclaw-memory-v${version}"
 }

@@ -28,13 +28,6 @@
 		"@huggingface/transformers": "^3.8.1"
 	},
 	"devDependencies": {
-		"@semantic-release/commit-analyzer": "^13.0.1",
-		"@semantic-release/git": "^10.0.1",
-		"@semantic-release/github": "^12.0.2",
-		"@semantic-release/npm": "^13.1.1",
-		"@semantic-release/release-notes-generator": "^14.1.0",
-		"conventional-changelog-conventionalcommits": "^9.1.0",
-		"harperdb": "^4.7.24",
-		"semantic-release": "^25.0.2"
+		"harperdb": "^4.7.24"
 	}
 }
