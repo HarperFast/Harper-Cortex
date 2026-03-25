@@ -8,6 +8,13 @@
 		"synapse": "./bin/synapse.js"
 	},
 	"license": "MIT",
+	"files": [
+		"resources.js",
+		"resources/",
+		"bin/",
+		"schema.graphql",
+		"config.yaml"
+	],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/HarperFast/Cortex.git",
