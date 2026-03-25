@@ -24,7 +24,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
-      - run: npm ci
+      - run: npm ci --ignore-platform
 
       - name: Build
         run: npm run build

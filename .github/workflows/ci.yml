@@ -18,7 +18,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
-      - run: npm ci
+      - run: npm ci --ignore-platform
 
       - name: Format check
         run: npm run format:check
