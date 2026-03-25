@@ -1,5 +1,5 @@
 /**
- * @harper/openclaw-memory — OpenClaw Memory Plugin
+ * @harperfast/openclaw-memory — OpenClaw Memory Plugin
  *
  * Distributed long-term agent memory backed by Harper Cortex.
  * Provides server-side embeddings, multi-agent sharing, and zero API keys required.

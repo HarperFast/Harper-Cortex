@@ -1,4 +1,4 @@
-# @harper/openclaw-memory
+# @harperfast/openclaw-memory
 
 Distributed long-term agent memory backed by Harper Cortex. Server-side embeddings, multi-agent sharing, zero API keys required.
 
@@ -16,7 +16,7 @@ Distributed long-term agent memory backed by Harper Cortex. Server-side embeddin
 ## Installation
 
 ```bash
-npm install @harper/openclaw-memory
+npm install @harperfast/openclaw-memory
 ```
 
 Then configure in your OpenClaw settings file:
@@ -25,9 +25,9 @@ Then configure in your OpenClaw settings file:
 {
 	"plugins": {
 		"slots": {
-			"memory": "@harper/openclaw-memory"
+			"memory": "@harperfast/openclaw-memory"
 		},
-		"@harper/openclaw-memory": {
+		"@harperfast/openclaw-memory": {
 			"instanceUrl": "https://my-instance.harpercloud.com",
 			"table": "agent_memory",
 			"token": "optional-auth-token",
@@ -43,7 +43,7 @@ Then configure in your OpenClaw settings file:
 Or install via OpenClaw's plugin manager:
 
 ```bash
-openclaw plugins install @harper/openclaw-memory
+openclaw plugins install @harperfast/openclaw-memory
 ```
 
 ## Configuration
@@ -261,7 +261,7 @@ The plugin includes built-in protections:
 
 ## Comparison with Alternatives
 
-| Feature        | memory-lancedb                                                       | @harper/openclaw-memory        |
+| Feature        | memory-lancedb                                                       | @harperfast/openclaw-memory    |
 | -------------- | -------------------------------------------------------------------- | ------------------------------ |
 | Embedding      | Requires OpenAI API key                                              | Server-side (Cortex ONNX)      |
 | Storage        | Local file                                                           | Distributed service            |

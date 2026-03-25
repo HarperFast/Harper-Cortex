@@ -8,7 +8,7 @@ Open-source AI memory system powered by [Harper Fabric](https://www.harperdb.io/
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | [`@harperfast/cortex`](packages/cortex/)                       | Harper Fabric application — Memory + Synapse tables, classification, embeddings |
 | [`@harperfast/cortex-client`](packages/cortex-client/)         | Lightweight TypeScript HTTP client for Cortex                                   |
-| [`@harper/openclaw-memory`](packages/openclaw-memory/)         | OpenClaw plugin — auto-recall and auto-capture lifecycle hooks                  |
+| [`@harperfast/openclaw-memory`](packages/openclaw-memory/)     | OpenClaw plugin — auto-recall and auto-capture lifecycle hooks                  |
 | [`@harperfast/cortex-mcp-server`](packages/cortex-mcp-server/) | MCP server — bridges AI agents (Claude, Cursor, Windsurf) to Cortex             |
 
 ## Quick Start

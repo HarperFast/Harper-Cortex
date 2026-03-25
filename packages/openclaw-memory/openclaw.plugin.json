@@ -1,5 +1,5 @@
 {
-	"name": "@harper/openclaw-memory",
+	"name": "@harperfast/openclaw-memory",
 	"version": "0.1.0",
 	"description": "Distributed long-term agent memory backed by Harper Cortex. Server-side embeddings, multi-agent sharing, zero API keys required.",
 	"kind": "memory",

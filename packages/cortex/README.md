@@ -427,12 +427,12 @@ See [docs/synapse-design.md](docs/synapse-design.md) for full architecture detai
 
 Official packages for integrating with Cortex from your applications:
 
-| Package                           | Description                                                                                                                                                  | Repo                                                                            |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| **@harperfast/cortex-client**     | Lightweight HTTP-only TypeScript client. Zero dependencies, dual ESM/CJS. Flair-style namespaced API (`client.memory.search`, `client.synapse.ingest`, etc.) | [HarperFast/cortex-client](https://github.com/HarperFast/cortex-client)         |
-| **@langchain/harper**             | LangChain.js VectorStore and Retriever backed by Cortex. Drop-in integration for any LangChain RAG pipeline.                                                 | [HarperFast/langchain-harper](https://github.com/HarperFast/langchain-harper)   |
-| **@harper/openclaw-memory**       | OpenClaw/NemoClaw memory plugin. Auto-recall and auto-capture lifecycle hooks, remember/recall/forget/count agent tools.                                     | [HarperFast/openclaw-memory](https://github.com/HarperFast/openclaw-memory)     |
-| **@harperfast/cortex-mcp-server** | Remote MCP server exposing Cortex to Claude, Cursor, Windsurf. 7 standard tools + 6 admin tools. Standalone or Harper deployment modes.                      | [HarperFast/cortex-mcp-server](https://github.com/HarperFast/cortex-mcp-server) |
+| Package                           | Description                                                                                                                                                  | Repo                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| **@harperfast/cortex-client**     | Lightweight HTTP-only TypeScript client. Zero dependencies, dual ESM/CJS. Flair-style namespaced API (`client.memory.search`, `client.synapse.ingest`, etc.) | [packages/cortex-client](../cortex-client/)                                   |
+| **@langchain/harper**             | LangChain.js VectorStore and Retriever backed by Cortex. Drop-in integration for any LangChain RAG pipeline.                                                 | [HarperFast/langchain-harper](https://github.com/HarperFast/langchain-harper) |
+| **@harperfast/openclaw-memory**   | OpenClaw/NemoClaw memory plugin. Auto-recall and auto-capture lifecycle hooks, remember/recall/forget/count agent tools.                                     | [packages/openclaw-memory](../openclaw-memory/)                               |
+| **@harperfast/cortex-mcp-server** | Remote MCP server exposing Cortex to Claude, Cursor, Windsurf. 7 standard tools + 6 admin tools. Standalone or Harper deployment modes.                      | [packages/cortex-mcp-server](../cortex-mcp-server/)                           |
 
 ## Agent Skills
 

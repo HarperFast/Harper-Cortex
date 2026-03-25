@@ -4,6 +4,9 @@
 	"description": "Remote MCP server that exposes Harper Cortex memory as tools to Claude, Cursor, Windsurf, and any MCP-compatible client",
 	"type": "module",
 	"main": "./dist/index.js",
+	"files": [
+		"dist"
+	],
 	"bin": {
 		"cortex-mcp-server": "./dist/index.js"
 	},

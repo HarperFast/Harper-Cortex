@@ -10,7 +10,7 @@ This is an npm workspaces monorepo with 4 packages:
 | ------------------------------- | ----------------------------- | ---------- | ----------------------------------------------------------------------- |
 | `@harperfast/cortex`            | `packages/cortex/`            | JavaScript | Harper Fabric app — Memory + Synapse tables, classification, embeddings |
 | `@harperfast/cortex-client`     | `packages/cortex-client/`     | TypeScript | Lightweight HTTP SDK for Cortex                                         |
-| `@harper/openclaw-memory`       | `packages/openclaw-memory/`   | TypeScript | OpenClaw plugin — auto-recall/capture lifecycle hooks                   |
+| `@harperfast/openclaw-memory`   | `packages/openclaw-memory/`   | TypeScript | OpenClaw plugin — auto-recall/capture lifecycle hooks                   |
 | `@harperfast/cortex-mcp-server` | `packages/cortex-mcp-server/` | TypeScript | MCP server — bridges AI agents to Cortex                                |
 
 ## Tech Stack
