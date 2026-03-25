@@ -130,17 +130,23 @@ See [docs/mcp-setup.md](docs/mcp-setup.md) for configuration instructions.
 
 ## Environment Variables
 
-| Variable               | Required        | Description                                                              |
-| ---------------------- | --------------- | ------------------------------------------------------------------------ |
-| `ANTHROPIC_API_KEY`    | Yes             | Anthropic API key for Claude (message classification)                    |
-| `SLACK_SIGNING_SECRET` | For Slack       | Slack app signing secret (webhook verification)                          |
-| `SLACK_BOT_TOKEN`      | For Slack       | Slack bot user OAuth token (`xoxb-...`)                                  |
-| `CLI_TARGET`           | For deploy      | Harper Fabric cluster URL (e.g., `https://cluster.org.harperfabric.com`) |
-| `CLI_TARGET_USERNAME`  | For deploy      | Harper cluster admin username                                            |
-| `CLI_TARGET_PASSWORD`  | For deploy      | Harper cluster admin password                                            |
-| `SYNAPSE_ENDPOINT`     | For Synapse CLI | Base URL of Cortex deployment                                            |
-| `SYNAPSE_PROJECT`      | For Synapse CLI | Project ID to scope context entries                                      |
-| `SYNAPSE_AUTH`         | For Synapse CLI | Authorization header (e.g. `Basic dXNlcjpwYXNz`)                         |
+| Variable                  | Required        | Description                                                                                                                                                    |
+| ------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`       | Optional        | Anthropic API key for Claude (default classification provider). Not required if using a different `CLASSIFICATION_PROVIDER` or running without classification. |
+| `SLACK_SIGNING_SECRET`    | For Slack       | Slack app signing secret (webhook verification)                                                                                                                |
+| `SLACK_BOT_TOKEN`         | For Slack       | Slack bot user OAuth token (`xoxb-...`)                                                                                                                        |
+| `CLI_TARGET`              | For deploy      | Harper Fabric cluster URL (e.g., `https://cluster.org.harperfabric.com`)                                                                                       |
+| `CLI_TARGET_USERNAME`     | For deploy      | Harper cluster admin username                                                                                                                                  |
+| `CLI_TARGET_PASSWORD`     | For deploy      | Harper cluster admin password                                                                                                                                  |
+| `SYNAPSE_ENDPOINT`        | For Synapse CLI | Base URL of Cortex deployment                                                                                                                                  |
+| `SYNAPSE_PROJECT`         | For Synapse CLI | Project ID to scope context entries                                                                                                                            |
+| `SYNAPSE_AUTH`            | For Synapse CLI | Authorization header (e.g. `Basic dXNlcjpwYXNz`)                                                                                                               |
+| `CLASSIFICATION_PROVIDER` | Optional        | Classification LLM provider: `anthropic` (default), `openai`, `google`, `ollama`, `openai-compatible`, or `local`                                              |
+| `CLASSIFICATION_API_KEY`  | Optional        | API key for the chosen classification provider (falls back to `ANTHROPIC_API_KEY` for Anthropic)                                                               |
+| `CLASSIFICATION_MODEL`    | Optional        | Model ID for classification (defaults vary by provider)                                                                                                        |
+| `CLASSIFICATION_BASE_URL` | Optional        | Base URL for `ollama` or `openai-compatible` providers                                                                                                         |
+| `EMBEDDING_MODEL`         | Optional        | HuggingFace model for embeddings (default: `Xenova/all-MiniLM-L6-v2`)                                                                                          |
+| `REQUIRE_AGENT_NAMESPACE` | Optional        | Set to `true` to require `agentId` on all search/count requests (multi-tenant enforcement)                                                                     |
 
 ## Schema
 
@@ -243,12 +249,18 @@ Records without an `embedding` field are embedded server-side automatically.
 
 ## Scripts
 
-| Command          | Description                          |
-| ---------------- | ------------------------------------ |
-| `npm run dev`    | Start Harper locally for development |
-| `npm run deploy` | Deploy to Harper Fabric              |
-| `npm test`       | Run all tests                        |
-| `npm start`      | Start Harper in production mode      |
+| Command                 | Description                          |
+| ----------------------- | ------------------------------------ |
+| `npm run dev`           | Start Harper locally for development |
+| `npm run deploy`        | Deploy to Harper Fabric              |
+| `npm test`              | Run all tests (Vitest)               |
+| `npm run test:watch`    | Run tests in watch mode              |
+| `npm run test:coverage` | Run tests with coverage report       |
+| `npm run format:check`  | Check formatting (dprint)            |
+| `npm run format:fix`    | Auto-fix formatting                  |
+| `npm run lint:check`    | Lint with oxlint                     |
+| `npm run lint:fix`      | Auto-fix lint issues                 |
+| `npm start`             | Start Harper in production mode      |
 
 ## Testing
 
@@ -256,28 +268,41 @@ Records without an `embedding` field are embedded server-side automatically.
 npm test
 ```
 
-Tests use Node.js built-in test runner with module mocking. No extra test dependencies required.
+Tests use [Vitest](https://vitest.dev/) with module mocking via `vi.mock()` / `vi.hoisted()`.
 
 ## Project Structure
 
 ```
 ├── config.yaml         # Harper application configuration
 ├── schema.graphql      # Database schema (Memory + SynapseEntry tables)
-├── resources.js        # Core logic: webhook, search, Synapse resource classes
+├── resources.js        # Barrel re-export (imports from resources/)
+├── resources/          # Core logic (split modules)
+│   ├── shared.js       # Embedding model, constants, generateEmbedding()
+│   ├── memory.js       # MemorySearch, MemoryStore, MemoryCount, VectorSearch, BatchUpsert
+│   ├── synapse.js      # SynapseIngest, SynapseSearch, SynapseEmit, SynapseEntry
+│   ├── slack-webhook.js        # SlackWebhook + HMAC signature verification
+│   └── classification-provider.js  # 6-provider classification (Anthropic, OpenAI, Google, Ollama, etc.)
 ├── package.json        # Dependencies and scripts
 ├── .env.example        # Environment variable template
 ├── .nvmrc              # Node.js version (24 LTS)
 ├── bin/
 │   └── synapse.js      # Synapse CLI (sync, emit, search, watch, status)
-├── test/               # Test suite (82 tests)
+├── test/               # Test suite (142 tests, Vitest)
+│   ├── batch-upsert.test.js
 │   ├── classify.test.js
+│   ├── dedup-store.test.js
 │   ├── embedding.test.js
-│   ├── webhook.test.js
+│   ├── generic-filtering.test.js
+│   ├── memory-count.test.js
+│   ├── namespace.test.js
+│   ├── score-normalization.test.js
 │   ├── search.test.js
 │   ├── synapse-classify.test.js
-│   ├── synapse-search.test.js
+│   ├── synapse-emit.test.js
 │   ├── synapse-ingest.test.js
-│   └── synapse-emit.test.js
+│   ├── synapse-search.test.js
+│   ├── vector-search.test.js
+│   └── webhook.test.js
 └── docs/               # Guides
     ├── architecture.md
     ├── synapse-design.md
@@ -325,26 +350,28 @@ The system ingests data via webhooks. Add new sources by creating a new Resource
 
 ### Classification LLMs
 
-Swap the classification model by changing `CLASSIFICATION_MODEL` in `resources.js` and updating the SDK import.
+Configure the classification provider via environment variables (`CLASSIFICATION_PROVIDER`, `CLASSIFICATION_API_KEY`, `CLASSIFICATION_MODEL`, `CLASSIFICATION_BASE_URL`). The provider-agnostic classification system in `resources/classification-provider.js` supports 6 backends. If no provider is configured, classification is skipped and memories are stored with `classification: null`.
 
-| Provider           | Recommended Model | Trade-off                                      |
-| ------------------ | ----------------- | ---------------------------------------------- |
-| **Anthropic**      | Claude Haiku 3.5  | Best structured JSON output (default)          |
-| **OpenAI**         | GPT-4o-mini       | Cheapest, fast, good at JSON                   |
-| **Google**         | Gemini 2.0 Flash  | Generous free tier                             |
-| **Ollama** (local) | Llama 3 / Mistral | Full privacy, no API costs, requires local GPU |
+| Provider                   | `CLASSIFICATION_PROVIDER` | Recommended Model | Trade-off                                      |
+| -------------------------- | ------------------------- | ----------------- | ---------------------------------------------- |
+| **Anthropic** (default)    | `anthropic`               | Claude Haiku 3.5  | Best structured JSON output                    |
+| **OpenAI**                 | `openai`                  | GPT-4o-mini       | Cheapest, fast, good at JSON                   |
+| **Google**                 | `google`                  | Gemini 2.0 Flash  | Generous free tier                             |
+| **Ollama** (local)         | `ollama`                  | Llama 3 / Mistral | Full privacy, no API costs, requires local GPU |
+| **OpenAI-compatible**      | `openai-compatible`       | Any               | For vLLM, Together, Fireworks, etc.            |
+| **Local keyword fallback** | `local`                   | N/A               | No LLM needed, pattern-based classification    |
 
 ### Embedding Providers
 
-Swap the embedding provider by changing `generateEmbedding()` in `resources.js`. If you change the vector dimensions, re-embed all existing records.
+The default embedding model can be changed via the `EMBEDDING_MODEL` environment variable (see `resources/shared.js`). If you change the vector dimensions, re-embed all existing records.
 
-| Provider                 | Recommended Model      | Dimensions | Trade-off                        |
-| ------------------------ | ---------------------- | ---------- | -------------------------------- |
-| **@xenova/transformers** | all-MiniLM-L6-v2       | 384        | Local ONNX, no API key (default) |
-| **Voyage AI**            | voyage-3               | 1024       | High quality, requires API key   |
-| **OpenAI**               | text-embedding-3-small | 1536       | Most widely adopted              |
-| **Cohere**               | embed-v4               | 1024       | Strong multilingual support      |
-| **Ollama** (local)       | nomic-embed-text       | 768        | Full privacy, zero API cost      |
+| Provider                      | Recommended Model      | Dimensions | Trade-off                        |
+| ----------------------------- | ---------------------- | ---------- | -------------------------------- |
+| **@huggingface/transformers** | all-MiniLM-L6-v2       | 384        | Local ONNX, no API key (default) |
+| **Voyage AI**                 | voyage-3               | 1024       | High quality, requires API key   |
+| **OpenAI**                    | text-embedding-3-small | 1536       | Most widely adopted              |
+| **Cohere**                    | embed-v4               | 1024       | Strong multilingual support      |
+| **Ollama** (local)            | nomic-embed-text       | 768        | Full privacy, zero API cost      |
 
 ### MCP Clients (Retrieval)
 
