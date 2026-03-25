@@ -1,6 +1,6 @@
 {
 	"name": "@harperfast/cortex-mcp-server",
-	"version": "0.2.0",
+	"version": "1.0.0",
 	"description": "Remote MCP server that exposes Harper Cortex memory as tools to Claude, Cursor, Windsurf, and any MCP-compatible client",
 	"type": "module",
 	"main": "./dist/index.js",
