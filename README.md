@@ -27,12 +27,12 @@ Cortex collapses all of that into a single runtime:
 
 Use Cortex from any agent framework or AI tool:
 
-| Package | Description | Install |
-|---------|-------------|---------|
-| **[@harperfast/cortex-client](packages/cortex-client)** | Lightweight TypeScript HTTP client. Zero dependencies, dual ESM/CJS. | `npm i @harperfast/cortex-client` |
-| **[@harperfast/cortex-mcp-server](packages/cortex-mcp-server)** | MCP server for Claude, Cursor, Windsurf, and any MCP-compatible client. Multi-tenant auth, content safety, rate limiting. | `npm i @harperfast/cortex-mcp-server` |
-| **[@harperfast/openclaw-memory](packages/openclaw-memory)** | OpenClaw / NemoClaw memory plugin. Auto-recall before each turn, auto-capture after. Drop-in LanceDB replacement. | `npm i @harperfast/openclaw-memory` |
-| **@langchain/harper** | LangChain.js VectorStore and Retriever backed by Cortex. | [HarperFast/langchain-harper](https://github.com/HarperFast/langchain-harper) |
+| Package                                                         | Description                                                                                                               | Install                                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **[@harperfast/cortex-client](packages/cortex-client)**         | Lightweight TypeScript HTTP client. Zero dependencies, dual ESM/CJS.                                                      | `npm i @harperfast/cortex-client`                                             |
+| **[@harperfast/cortex-mcp-server](packages/cortex-mcp-server)** | MCP server for Claude, Cursor, Windsurf, and any MCP-compatible client. Multi-tenant auth, content safety, rate limiting. | `npm i @harperfast/cortex-mcp-server`                                         |
+| **[@harperfast/openclaw-memory](packages/openclaw-memory)**     | OpenClaw / NemoClaw memory plugin. Auto-recall before each turn, auto-capture after. Drop-in LanceDB replacement.         | `npm i @harperfast/openclaw-memory`                                           |
+| **@langchain/harper**                                           | LangChain.js VectorStore and Retriever backed by Cortex.                                                                  | [HarperFast/langchain-harper](https://github.com/HarperFast/langchain-harper) |
 
 ---
 
@@ -121,12 +121,12 @@ AI Agents (Claude, Cursor, Windsurf, OpenClaw, LangChain)
 
 ## Monorepo Packages
 
-| Package | Path | Description |
-|---------|------|-------------|
-| `@harperfast/cortex` | [packages/cortex](packages/cortex) | Harper Fabric application — Memory + Synapse tables, classification, embeddings, REST endpoints |
-| `@harperfast/cortex-client` | [packages/cortex-client](packages/cortex-client) | Lightweight TypeScript HTTP client for Cortex |
-| `@harperfast/openclaw-memory` | [packages/openclaw-memory](packages/openclaw-memory) | OpenClaw/NemoClaw plugin — auto-recall and auto-capture lifecycle hooks |
-| `@harperfast/cortex-mcp-server` | [packages/cortex-mcp-server](packages/cortex-mcp-server) | MCP server — bridges AI agents to Cortex with auth, safety, and rate limiting |
+| Package                         | Path                                                     | Description                                                                                     |
+| ------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `@harperfast/cortex`            | [packages/cortex](packages/cortex)                       | Harper Fabric application — Memory + Synapse tables, classification, embeddings, REST endpoints |
+| `@harperfast/cortex-client`     | [packages/cortex-client](packages/cortex-client)         | Lightweight TypeScript HTTP client for Cortex                                                   |
+| `@harperfast/openclaw-memory`   | [packages/openclaw-memory](packages/openclaw-memory)     | OpenClaw/NemoClaw plugin — auto-recall and auto-capture lifecycle hooks                         |
+| `@harperfast/cortex-mcp-server` | [packages/cortex-mcp-server](packages/cortex-mcp-server) | MCP server — bridges AI agents to Cortex with auth, safety, and rate limiting                   |
 
 See each package's README for detailed documentation:
 
@@ -152,25 +152,25 @@ npm run lint:check         # Lint all packages (oxlint)
 
 ### Memory
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/MemorySearch` | POST | Semantic search with attribute filters and score normalization (0-1) |
-| `/VectorSearch` | POST | Search with a pre-computed embedding vector (for LangChain / server-to-server) |
-| `/MemoryStore` | POST | Dedup-aware storage: SHA-256 hash + vector similarity dedup before insert |
-| `/MemoryCount` | POST | Count memories with optional filters |
-| `/BatchUpsert` | POST | Insert or update multiple records in a single request |
-| `/Memory/` | GET | List all memories (with pagination) |
-| `/Memory/{id}` | GET/DELETE | Get or delete a single memory by ID |
-| `/SlackWebhook` | POST | Receives Slack Events API payloads, classifies, embeds, and stores |
+| Endpoint        | Method     | Description                                                                    |
+| --------------- | ---------- | ------------------------------------------------------------------------------ |
+| `/MemorySearch` | POST       | Semantic search with attribute filters and score normalization (0-1)           |
+| `/VectorSearch` | POST       | Search with a pre-computed embedding vector (for LangChain / server-to-server) |
+| `/MemoryStore`  | POST       | Dedup-aware storage: SHA-256 hash + vector similarity dedup before insert      |
+| `/MemoryCount`  | POST       | Count memories with optional filters                                           |
+| `/BatchUpsert`  | POST       | Insert or update multiple records in a single request                          |
+| `/Memory/`      | GET        | List all memories (with pagination)                                            |
+| `/Memory/{id}`  | GET/DELETE | Get or delete a single memory by ID                                            |
+| `/SlackWebhook` | POST       | Receives Slack Events API payloads, classifies, embeds, and stores             |
 
 ### Synapse (Universal Context Broker)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/SynapseIngest` | POST | Ingest context from any tool (CLAUDE.md, .cursor/rules, .windsurf/) |
-| `/SynapseSearch` | POST | Semantic search scoped to a project |
-| `/SynapseEmit` | POST | Emit context formatted for a target tool |
-| `/SynapseEntry/` | GET | List/browse all context entries |
+| Endpoint         | Method | Description                                                         |
+| ---------------- | ------ | ------------------------------------------------------------------- |
+| `/SynapseIngest` | POST   | Ingest context from any tool (CLAUDE.md, .cursor/rules, .windsurf/) |
+| `/SynapseSearch` | POST   | Semantic search scoped to a project                                 |
+| `/SynapseEmit`   | POST   | Emit context formatted for a target tool                            |
+| `/SynapseEntry/` | GET    | List/browse all context entries                                     |
 
 See [Cortex Core README](packages/cortex/README.md) for full request/response examples.
 
@@ -180,43 +180,43 @@ See [Cortex Core README](packages/cortex/README.md) for full request/response ex
 
 ### Ingestion Sources
 
-| Platform | Method | Status |
-|----------|--------|--------|
-| Slack | Events API | Included |
-| GitHub | Webhooks | Add via Resource class |
-| Linear | Webhooks | Add via Resource class |
-| Jira | Webhooks | Add via Resource class |
-| Discord | Gateway / Webhooks | Add via Resource class |
+| Platform | Method             | Status                 |
+| -------- | ------------------ | ---------------------- |
+| Slack    | Events API         | Included               |
+| GitHub   | Webhooks           | Add via Resource class |
+| Linear   | Webhooks           | Add via Resource class |
+| Jira     | Webhooks           | Add via Resource class |
+| Discord  | Gateway / Webhooks | Add via Resource class |
 
 ### Embedding Providers
 
-| Provider | Model | Dimensions | Notes |
-|----------|-------|-----------|-------|
-| **@xenova/transformers** | all-MiniLM-L6-v2 | 384 | **Default.** Local ONNX, no API key. |
-| Voyage AI | voyage-3 | 1024 | High quality, requires API key |
-| OpenAI | text-embedding-3-small | 1536 | Most widely adopted |
-| Cohere | embed-v4 | 1024 | Strong multilingual support |
-| Ollama (local) | nomic-embed-text | 768 | Full privacy, zero API cost |
+| Provider                 | Model                  | Dimensions | Notes                                |
+| ------------------------ | ---------------------- | ---------- | ------------------------------------ |
+| **@xenova/transformers** | all-MiniLM-L6-v2       | 384        | **Default.** Local ONNX, no API key. |
+| Voyage AI                | voyage-3               | 1024       | High quality, requires API key       |
+| OpenAI                   | text-embedding-3-small | 1536       | Most widely adopted                  |
+| Cohere                   | embed-v4               | 1024       | Strong multilingual support          |
+| Ollama (local)           | nomic-embed-text       | 768        | Full privacy, zero API cost          |
 
 ### Classification LLMs
 
-| Provider | Model | Notes |
-|----------|-------|-------|
-| **Anthropic** | Claude Haiku 3.5 | **Default.** Best structured JSON output |
-| OpenAI | GPT-4o-mini | Cheapest, fast |
-| Google | Gemini 2.0 Flash | Generous free tier |
-| Ollama (local) | Llama 3 / Mistral | Full privacy |
-| None | Keyword fallback | Graceful degradation when no API key configured |
+| Provider       | Model             | Notes                                           |
+| -------------- | ----------------- | ----------------------------------------------- |
+| **Anthropic**  | Claude Haiku 3.5  | **Default.** Best structured JSON output        |
+| OpenAI         | GPT-4o-mini       | Cheapest, fast                                  |
+| Google         | Gemini 2.0 Flash  | Generous free tier                              |
+| Ollama (local) | Llama 3 / Mistral | Full privacy                                    |
+| None           | Keyword fallback  | Graceful degradation when no API key configured |
 
 ### MCP Clients
 
-| Client | Status |
-|--------|--------|
+| Client         | Status          |
+| -------------- | --------------- |
 | Claude Desktop | Fully supported |
-| Claude Code | Fully supported |
-| Cursor | Fully supported |
-| Windsurf | MCP-compatible |
-| Any MCP client | Open standard |
+| Claude Code    | Fully supported |
+| Cursor         | Fully supported |
+| Windsurf       | MCP-compatible  |
+| Any MCP client | Open standard   |
 
 ---
 
