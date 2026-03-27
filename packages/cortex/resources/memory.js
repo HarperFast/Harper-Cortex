@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Resource, tables } from 'harperdb';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { classifyMemory } from './classification-provider.js';
 import {
 	DEFAULT_SEARCH_LIMIT,
@@ -365,6 +365,7 @@ export class MemoryStore extends Resource {
 		const classification = await classifyMessage(text);
 
 		const memoryRecord = {
+			id: randomUUID(),
 			rawText: text,
 			contentHash,
 			source: 'api',
