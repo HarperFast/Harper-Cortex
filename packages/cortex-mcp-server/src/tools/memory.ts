@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { formatAuthHeader } from '../auth.js';
 import { verifyRecordOwnership } from '../namespace.js';
 import { sanitizeForRetrieval, sanitizeForStorage } from '../safety.js';
 
@@ -29,12 +30,7 @@ async function cortexFetch(
 	};
 
 	if (context.cortexToken) {
-		// Support pre-formatted auth headers and raw tokens (default to Basic for Harper)
-		if (context.cortexToken.startsWith('Basic ') || context.cortexToken.startsWith('Bearer ')) {
-			headers['Authorization'] = context.cortexToken;
-		} else {
-			headers['Authorization'] = `Basic ${context.cortexToken}`;
-		}
+		headers['Authorization'] = formatAuthHeader(context.cortexToken);
 	}
 
 	const response = await fetch(url.toString(), {

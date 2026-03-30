@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { Resource, tables } from 'harperdb';
 import { createHash, randomUUID } from 'node:crypto';
 import { classifyMemory } from './classification-provider.js';
@@ -39,18 +38,19 @@ Respond with valid JSON only, in this exact format:
 }`;
 
 let anthropicClient;
-function getAnthropicClient() {
+async function getAnthropicClient() {
 	if (!anthropicClient) {
 		if (!process.env.ANTHROPIC_API_KEY) {
 			throw new Error('ANTHROPIC_API_KEY environment variable is required');
 		}
+		const { default: Anthropic } = await import('@anthropic-ai/sdk');
 		anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 	}
 	return anthropicClient;
 }
 
 async function classifyWithLegacyAnthropic(text) {
-	const client = getAnthropicClient();
+	const client = await getAnthropicClient();
 	const message = await client.messages.create({
 		model: CLASSIFICATION_MODEL,
 		max_tokens: 512,
@@ -411,11 +411,28 @@ export class MemoryStore extends Resource {
 // ---------------------------------------------------------------------------
 
 export class MemoryTable extends Memory {
-	get(target) {
+	async get(target) {
 		const record = super.get(target);
 		if (record && typeof record === 'object') {
-			const { embedding: _, ...rest } = record;
-			return rest;
+			return {
+				id: record.id,
+				rawText: record.rawText,
+				source: record.source,
+				sourceType: record.sourceType,
+				channelId: record.channelId,
+				channelName: record.channelName,
+				authorId: record.authorId,
+				authorName: record.authorName,
+				agentId: record.agentId,
+				classification: record.classification,
+				entities: record.entities,
+				contentHash: record.contentHash,
+				supersedes: record.supersedes,
+				summary: record.summary,
+				timestamp: record.timestamp,
+				threadTs: record.threadTs,
+				metadata: record.metadata,
+			};
 		}
 		return record;
 	}

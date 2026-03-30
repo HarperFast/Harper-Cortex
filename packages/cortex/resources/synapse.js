@@ -366,11 +366,26 @@ const synapseEmitters = {
 // ---------------------------------------------------------------------------
 
 export class SynapseEntry extends SynapseEntryBase {
-	get(target) {
+	async get(target) {
 		const record = super.get(target);
 		if (record && typeof record === 'object') {
-			const { embedding: _, ...rest } = record;
-			return rest;
+			return {
+				id: record.id,
+				projectId: record.projectId,
+				type: record.type,
+				content: record.content,
+				source: record.source,
+				sourceFormat: record.sourceFormat,
+				summary: record.summary,
+				status: record.status,
+				references: record.references,
+				tags: record.tags,
+				entities: record.entities,
+				parentId: record.parentId,
+				createdAt: record.createdAt,
+				updatedAt: record.updatedAt,
+				metadata: record.metadata,
+			};
 		}
 		return record;
 	}

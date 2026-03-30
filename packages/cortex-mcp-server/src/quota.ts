@@ -8,6 +8,8 @@
  * after any successful write or delete so counts stay accurate.
  */
 
+import { formatAuthHeader } from './auth.js';
+
 export const COUNT_TTL_MS = 60_000;
 
 export interface CountCacheEntry {
@@ -30,9 +32,7 @@ export async function getCachedCount(
 
 	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 	if (cortexToken) {
-		headers['Authorization'] = cortexToken.startsWith('Basic ') || cortexToken.startsWith('Bearer ')
-			? cortexToken
-			: `Basic ${cortexToken}`;
+		headers['Authorization'] = formatAuthHeader(cortexToken);
 	}
 
 	const res = await fetch(`${cortexUrl}/MemoryCount`, {
