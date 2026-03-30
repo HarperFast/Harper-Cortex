@@ -298,7 +298,7 @@ This starts the server in HTTP mode with hot reload. By default, it connects to 
 
 - Ensure `CORTEX_TOKEN` is set correctly if your Cortex instance requires auth
 - For Harper Fabric, use `user:password` format — the server handles Base64 encoding automatically
-- If passing a pre-formatted header, prefix with `Basic ` or `Bearer ` (e.g., `Basic dXNlcjpwYXNz`)
+- If passing a pre-formatted header, prefix with `Basic` or `Bearer` (e.g., `Basic dXNlcjpwYXNz`)
 - Check that the token hasn't expired
 
 ### Memory not persisting
