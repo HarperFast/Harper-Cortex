@@ -52,11 +52,12 @@ export class HttpClient {
 			'Content-Type': 'application/json',
 		};
 		if (this.token) {
-			// Support both pre-formatted auth headers (e.g. "Basic xxx") and raw bearer tokens
+			// Support pre-formatted headers ("Basic xxx", "Bearer xxx") or raw credentials
 			if (this.token.startsWith('Basic ') || this.token.startsWith('Bearer ')) {
 				headers['Authorization'] = this.token;
 			} else {
-				headers['Authorization'] = `Basic ${this.token}`;
+				// Base64-encode raw credentials for Basic Auth (e.g. "user:pass")
+				headers['Authorization'] = `Basic ${Buffer.from(this.token).toString('base64')}`;
 			}
 		}
 		return headers;
