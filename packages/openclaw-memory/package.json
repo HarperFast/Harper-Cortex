@@ -1,6 +1,6 @@
 {
 	"name": "@harperfast/openclaw-memory",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Distributed long-term agent memory backed by Harper Cortex. Server-side embeddings, multi-agent sharing, zero API keys required.",
 	"type": "module",
 	"engines": {
