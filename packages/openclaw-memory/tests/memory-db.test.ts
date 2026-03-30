@@ -108,7 +108,7 @@ describe('CortexMemoryDB', () => {
 				expect.any(String),
 				expect.objectContaining({
 					headers: expect.objectContaining({
-						Authorization: 'Basic test-token-123',
+						Authorization: `Basic ${Buffer.from('test-token-123').toString('base64')}`,
 					}),
 				}),
 			);
