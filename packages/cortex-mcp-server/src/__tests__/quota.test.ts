@@ -98,14 +98,14 @@ describe('getCachedCount', () => {
 		expect(body.filters.agentId).toBe('my-agent');
 	});
 
-	it('formats Basic auth token correctly', async () => {
+	it('formats Basic auth token correctly (base64-encoded)', async () => {
 		global.fetch = vi.fn().mockResolvedValueOnce({
 			json: async () => ({ count: 0 }),
 		} as any);
 
 		await getCachedCount(CORTEX_URL, 'rawtoken', NS);
 		const headers = (fetch as any).mock.calls[0][1].headers;
-		expect(headers['Authorization']).toBe('Basic rawtoken');
+		expect(headers['Authorization']).toBe(`Basic ${Buffer.from('rawtoken').toString('base64')}`);
 	});
 });
 

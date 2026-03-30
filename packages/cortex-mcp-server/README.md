@@ -25,12 +25,13 @@ This is the lowest-friction entry point into the Harper ecosystem. Users can add
 ### 2. Claude Code
 
 ```bash
-# Install cortex-mcp-server on your machine or server
-npm install -g @harperfast/cortex-mcp-server
-
-# Add it as an MCP server
-claude mcp add cortex -- cortex-mcp-server --url https://my-instance.harpercloud.com
+# Add it as an MCP server (use port 9926 for Harper Fabric REST endpoints)
+claude mcp add cortex -- npx @harperfast/cortex-mcp-server \
+  --url https://my-instance.harperfabric.com:9926 \
+  --token "user@example.com:password"
 ```
+
+> **Port note:** Harper Fabric exposes custom resource endpoints (MemorySearch, MemoryStore, etc.) on port **9926**. Port 9925 is the operations API and will return 404 for MCP requests.
 
 ### 3. Cursor / Windsurf
 
@@ -198,10 +199,18 @@ services:
 
 ## Authentication
 
-The server supports Bearer token authentication:
+The server supports two authentication modes:
 
+**Basic Auth (Harper Fabric):** Pass credentials as `user:password` via `--token` or `CORTEX_TOKEN`. The server automatically Base64-encodes them for HTTP Basic Auth:
+
+```bash
+cortex-mcp-server --url https://my-cortex.harperfabric.com:9926 --token "user@example.com:password"
 ```
-Authorization: Bearer <your-token>
+
+**Bearer Auth:** Pass a pre-formatted Bearer token:
+
+```bash
+cortex-mcp-server --url https://my-cortex.harpercloud.com --token "Bearer eyJhbG..."
 ```
 
 In multi-tenant setups, include the user ID in the token:
@@ -279,14 +288,17 @@ This starts the server in HTTP mode with hot reload. By default, it connects to 
 
 ## Troubleshooting
 
-### "Connection refused" error
+### "Connection refused" or 404 errors
 
 - Check that `CORTEX_URL` is correct and the Cortex instance is running
-- Verify network connectivity: `curl https://my-cortex.harpercloud.com/api/health`
+- **Harper Fabric users:** Use port **9926** (REST endpoints), not 9925 (operations API)
+- Verify network connectivity: `curl https://my-cortex.harperfabric.com:9926/MemoryCount -X POST -H "Content-Type: application/json" -d '{}'`
 
-### "Authentication failed" error
+### "Authentication failed" or "Invalid character" error
 
 - Ensure `CORTEX_TOKEN` is set correctly if your Cortex instance requires auth
+- For Harper Fabric, use `user:password` format — the server handles Base64 encoding automatically
+- If passing a pre-formatted header, prefix with `Basic ` or `Bearer ` (e.g., `Basic dXNlcjpwYXNz`)
 - Check that the token hasn't expired
 
 ### Memory not persisting

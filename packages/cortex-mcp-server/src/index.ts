@@ -10,10 +10,10 @@
  * - Multi-tenant: JWT auth with JWKS, server-side namespace binding, per-tenant rate limiting
  *
  * Usage:
- *   npx @harperfast/cortex-mcp-server --url https://my-cortex.harpercloud.com --port 3000
- *   npx @harperfast/cortex-mcp-server --url https://my-cortex.harpercloud.com --multi-tenant --jwks-url https://my-cortex.harpercloud.com/.well-known/jwks.json
- *   docker run -e CORTEX_URL=... harperfast/cortex-mcp-server
- *   claude mcp add cortex -- npx @harperfast/cortex-mcp-server --url https://my-cortex.harpercloud.com
+ *   npx @harperfast/cortex-mcp-server --url https://my-cortex.harperfabric.com:9926 --token "user:pass"
+ *   npx @harperfast/cortex-mcp-server --url https://my-cortex.harperfabric.com:9926 --multi-tenant --jwks-url https://my-cortex.harperfabric.com/.well-known/jwks.json
+ *   docker run -e CORTEX_URL=https://my-cortex.harperfabric.com:9926 harperfast/cortex-mcp-server
+ *   claude mcp add cortex -- npx @harperfast/cortex-mcp-server --url https://my-cortex.harperfabric.com:9926 --token "user:pass"
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -22,7 +22,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { createServer } from 'http';
 import { z } from 'zod';
 
-import { extractToken, validateAuth, validateJWT, validateScope } from './auth.js';
+import { extractToken, formatAuthHeader, validateAuth, validateJWT, validateScope } from './auth.js';
 import { bindNamespace } from './namespace.js';
 import { getCachedCount, invalidateCountCache } from './quota.js';
 import { checkRateLimit, getMetricForTool, getQuotaLimits } from './rate-limiter.js';
@@ -356,11 +356,7 @@ async function main() {
 				const baseUrl = config.cortexUrl;
 				const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 				if (config.cortexToken) {
-					if (config.cortexToken.startsWith('Basic ') || config.cortexToken.startsWith('Bearer ')) {
-						headers['Authorization'] = config.cortexToken;
-					} else {
-						headers['Authorization'] = `Basic ${config.cortexToken}`;
-					}
+					headers['Authorization'] = formatAuthHeader(config.cortexToken);
 				}
 
 				// Get total count

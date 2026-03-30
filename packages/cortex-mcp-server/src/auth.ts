@@ -30,6 +30,18 @@ export function extractToken(authHeader?: string): string | undefined {
 }
 
 /**
+ * Build an Authorization header value from a raw token.
+ * If already prefixed with "Basic " or "Bearer ", pass through as-is.
+ * Otherwise treat as user:password credentials and Base64-encode for HTTP Basic Auth.
+ */
+export function formatAuthHeader(token: string): string {
+	if (token.startsWith('Basic ') || token.startsWith('Bearer ')) {
+		return token;
+	}
+	return `Basic ${Buffer.from(token).toString('base64')}`;
+}
+
+/**
  * Single-tenant auth (backward compatible)
  */
 export function validateAuth(token?: string): AuthContext {
