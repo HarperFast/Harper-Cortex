@@ -523,7 +523,7 @@ export class McpEndpoint extends Resource {
 					capabilities: { tools: {} },
 					serverInfo: {
 						name: 'cortex-mcp-server',
-						version: '0.1.0',
+						version: '1.0.1',
 					},
 				},
 			};

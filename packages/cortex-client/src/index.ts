@@ -82,7 +82,6 @@ export class CortexClient {
 // Re-export all public types and errors
 export type {
 	CortexClientConfig,
-	MemoryBatchUpsertRequest,
 	MemoryBatchUpsertResponse,
 	MemoryCountRequest,
 	MemoryCountResponse,

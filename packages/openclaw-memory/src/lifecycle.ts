@@ -96,10 +96,7 @@ export function createAutoCaptureHook(
 	};
 }
 
-/**
- * Simple fact extraction from conversation text.
- * In production, this would call an LLM or use more sophisticated extraction.
- */
+/** Extract facts from conversation text using simple heuristics. */
 async function extractFacts(
 	text: string,
 	maxFacts: number,
@@ -154,9 +151,6 @@ async function dedupFacts(
 	return deduped;
 }
 
-/**
- * Type definitions for lifecycle context (for reference)
- */
 export interface LifecycleContext {
 	/** The user's input prompt */
 	prompt?: string;

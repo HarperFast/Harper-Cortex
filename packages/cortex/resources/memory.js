@@ -12,10 +12,7 @@ import {
 
 const { Memory, SynapseEntry } = tables;
 
-// ---------------------------------------------------------------------------
-// Legacy Anthropic client (used when CLASSIFICATION_PROVIDER is not set
-// but ANTHROPIC_API_KEY is available, for backward compatibility)
-// ---------------------------------------------------------------------------
+// Legacy Anthropic classification (used when CLASSIFICATION_PROVIDER is unset)
 
 const CLASSIFICATION_MODEL = 'claude-haiku-3-5-20241022';
 
@@ -80,9 +77,7 @@ async function classifyWithLegacyAnthropic(text) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: Classify a message using the provider-agnostic classification system
-// Falls back to legacy Anthropic SDK when CLASSIFICATION_PROVIDER is not set
-// but ANTHROPIC_API_KEY is available (backward compatibility).
+// Classification helpers
 // ---------------------------------------------------------------------------
 
 export async function classifyMessage(text) {
@@ -179,7 +174,6 @@ export class MemorySearch extends Resource {
 			limit: searchLimit,
 		};
 
-		// Apply optional attribute filters for hybrid search
 		if (filters && typeof filters === 'object') {
 			const conditions = [];
 
@@ -211,8 +205,7 @@ export class MemorySearch extends Resource {
 
 		const results = [];
 		for await (const record of Memory.search(searchParams)) {
-			// Normalize Harper's cosine distance (0-2 range) to similarity score (0-1)
-			// For normalized vectors, distance = 2 - 2*similarity, so similarity = 1 - distance/2
+			// Normalize cosine distance to similarity score (0-1)
 			const similarity = Math.max(0, 1 - (record.$distance || 0) / 2);
 			results.push({
 				...record,
@@ -242,7 +235,6 @@ export class MemoryCount extends Resource {
 			select: ['id'],
 		};
 
-		// Apply optional filters
 		if (filters && typeof filters === 'object') {
 			const conditions = [];
 
@@ -293,7 +285,6 @@ export class MemoryStore extends Resource {
 
 		log('info', 'Memory store requested', { dedupThreshold, hasDedup: !!dedupThreshold });
 
-		// Compute SHA-256 hash of normalized text for fast exact-match dedup
 		const contentHash = createHash('sha256').update(text.trim().toLowerCase()).digest('hex');
 
 		// Fast path: exact content hash match
@@ -314,10 +305,8 @@ export class MemoryStore extends Resource {
 			};
 		}
 
-		// Generate embedding for the new memory
 		const embedding = await generateEmbedding(text);
 
-		// If dedupThreshold is provided, search for similar existing memories
 		if (dedupThreshold && typeof dedupThreshold === 'number' && dedupThreshold > 0) {
 			const searchParams = {
 				select: ['id', 'rawText', 'summary', '$distance'],
@@ -335,7 +324,6 @@ export class MemoryStore extends Resource {
 
 			const potentialDupes = [];
 			for await (const record of Memory.search(searchParams)) {
-				// Normalize distance to similarity score
 				const similarity = Math.max(0, 1 - (record.$distance || 0) / 2);
 				if (similarity >= dedupThreshold) {
 					potentialDupes.push({ ...record, similarity });
@@ -361,7 +349,6 @@ export class MemoryStore extends Resource {
 			}
 		}
 
-		// No duplicate found (or dedup disabled), classify and store new memory
 		const classification = await classifyMessage(text);
 
 		const memoryRecord = {
@@ -439,8 +426,7 @@ export class MemoryTable extends Memory {
 }
 
 // ---------------------------------------------------------------------------
-// VectorSearch - Raw vector similarity search (bypasses text embedding step)
-// Used by langchain-harper's HarperVectorStore to search with pre-computed vectors
+// VectorSearch - Raw vector similarity search with pre-computed embeddings
 // ---------------------------------------------------------------------------
 
 export class VectorSearch extends Resource {

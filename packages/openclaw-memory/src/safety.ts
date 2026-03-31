@@ -130,10 +130,7 @@ export function sanitizeMemory(text: string): {
 	};
 }
 
-/**
- * Calculate similarity between two texts using simple string metrics.
- * Returns a score from 0 to 1.
- */
+/** Calculate similarity between two texts (0-1 score). */
 export function calculateSimilarity(text1: string, text2: string): number {
 	// Normalize and lowercase
 	const normalized1 = text1.toLowerCase().trim();
@@ -144,8 +141,6 @@ export function calculateSimilarity(text1: string, text2: string): number {
 		return 1.0;
 	}
 
-	// Use simple Levenshtein-inspired approach for small texts
-	// For production, consider using a proper similarity library
 	const shorter = Math.min(normalized1.length, normalized2.length);
 	const longer = Math.max(normalized1.length, normalized2.length);
 
@@ -153,7 +148,6 @@ export function calculateSimilarity(text1: string, text2: string): number {
 		return 0;
 	}
 
-	// Count matching characters in sequence (simplified)
 	let matches = 0;
 	for (let i = 0; i < shorter; i++) {
 		if (normalized1[i] === normalized2[i]) {
@@ -161,7 +155,6 @@ export function calculateSimilarity(text1: string, text2: string): number {
 		}
 	}
 
-	// Simple similarity ratio
 	return matches / longer;
 }
 

@@ -98,10 +98,7 @@ export class CortexMemoryDB {
 		return response.count ?? 0;
 	}
 
-	/**
-	 * Batch store multiple memory entries.
-	 * Uses cortex.memory.batchUpsert() for bulk operations.
-	 */
+	/** Batch store multiple memory entries. */
 	async storeBatch(
 		entries: Omit<MemoryEntry, 'id' | 'createdAt'>[],
 	): Promise<string[]> {
@@ -118,7 +115,7 @@ export class CortexMemoryDB {
 			},
 		}));
 
-		const result = await this.cortex.memory.batchUpsert(records);
+		const result = await this.cortex.memory.bulkStore(records);
 		return records.map((r) => r.id);
 	}
 

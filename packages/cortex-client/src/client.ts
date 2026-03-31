@@ -1,6 +1,5 @@
 /**
- * Core HTTP client layer for Cortex.
- * Handles all fetch requests, authentication, error handling, and response parsing.
+ * Core HTTP client for Cortex.
  */
 
 import { CortexError } from './types.js';
@@ -11,10 +10,7 @@ export interface ClientConfig {
 	schema?: string;
 }
 
-/**
- * Low-level HTTP client for making requests to Cortex.
- * All methods are private; use the public CortexClient API instead.
- */
+/** Low-level HTTP client. Use CortexClient instead. */
 export class HttpClient {
 	private instanceUrl: string;
 	private token?: string;
@@ -26,12 +22,7 @@ export class HttpClient {
 		this.schema = config.schema ?? '';
 	}
 
-	/**
-	 * Build a full URL for a Cortex endpoint.
-	 * Pattern: {instanceUrl}/{table}/{endpoint}
-	 * Schema is optional; when absent, no prefix is added.
-	 * For Harper Fabric Custom Resources, schema is typically empty.
-	 */
+	/** Build a full URL: {instanceUrl}/{schema?}/{table}/{endpoint?} */
 	private buildUrl(table: string, endpoint?: string): string {
 		const parts = [this.instanceUrl];
 		if (this.schema) {
@@ -44,9 +35,6 @@ export class HttpClient {
 		return parts.join('/');
 	}
 
-	/**
-	 * Build request headers with optional auth.
-	 */
 	private buildHeaders(): Record<string, string> {
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
@@ -90,9 +78,7 @@ export class HttpClient {
 		return this.handleResponse<T>(response);
 	}
 
-	/**
-	 * Make a PUT request (table-level upsert with ID in URL).
-	 */
+	/** Make a PUT request. */
 	async put<T = any>(table: string, id: string, body: any): Promise<T> {
 		const url = `${this.buildUrl(table)}/${id}`;
 		const response = await fetch(url, {
@@ -117,9 +103,6 @@ export class HttpClient {
 		return this.handleResponse<T>(response);
 	}
 
-	/**
-	 * Handle fetch response and parse JSON or throw error.
-	 */
 	private async handleResponse<T>(response: Response): Promise<T> {
 		const contentType = response.headers.get('content-type');
 		const isJson = contentType?.includes('application/json');
@@ -134,7 +117,6 @@ export class HttpClient {
 				message = data || message;
 			}
 
-			// Provide helpful error message for missing endpoints
 			if (response.status === 404) {
 				if (message.includes('VectorSearch')) {
 					message =

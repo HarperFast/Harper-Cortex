@@ -1,8 +1,5 @@
 /**
- * @harperfast/openclaw-memory — OpenClaw Memory Plugin
- *
- * Distributed long-term agent memory backed by Harper Cortex.
- * Provides server-side embeddings, multi-agent sharing, and zero API keys required.
+ * OpenClaw Memory Plugin — long-term agent memory backed by Harper Cortex.
  */
 
 import { createAutoCaptureHook, createAutoRecallHook } from './lifecycle.js';

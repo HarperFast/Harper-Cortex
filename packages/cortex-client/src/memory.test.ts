@@ -186,7 +186,7 @@ describe('Memory', () => {
 		});
 	});
 
-	describe('batchUpsert', () => {
+	describe('bulkStore', () => {
 		it('should upsert multiple records', async () => {
 			const mockResponse = {
 				upserted: 2,
@@ -202,7 +202,7 @@ describe('Memory', () => {
 				}),
 			);
 
-			const result = await memory.batchUpsert([
+			const result = await memory.bulkStore([
 				{ rawText: 'Record 1', source: 'slack' },
 				{ rawText: 'Record 2', source: 'slack' },
 			]);

@@ -1,5 +1,4 @@
-// Barrel file — re-exports everything from the split resources/ modules
-// so that existing test imports (from '../resources.js') continue to work.
+// Barrel file — re-exports from split resource modules
 
 export {
 	BatchUpsert,

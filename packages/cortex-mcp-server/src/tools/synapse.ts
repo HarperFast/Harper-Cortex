@@ -4,47 +4,7 @@
  */
 
 import { z } from 'zod';
-import { formatAuthHeader } from '../auth.js';
-
-interface SynapseToolContext {
-	cortexUrl: string;
-	cortexToken?: string;
-	cortexSchema?: string;
-	userId?: string;
-}
-
-/**
- * Helper to fetch from Cortex API
- */
-async function cortexFetch(
-	context: SynapseToolContext,
-	endpoint: string,
-	options: RequestInit = {},
-): Promise<any> {
-	const url = new URL(endpoint, context.cortexUrl);
-	const headers: Record<string, string> = {
-		'Content-Type': 'application/json',
-		...(options.headers as Record<string, string>),
-	};
-
-	if (context.cortexToken) {
-		headers['Authorization'] = formatAuthHeader(context.cortexToken);
-	}
-
-	const response = await fetch(url.toString(), {
-		...options,
-		headers,
-	});
-
-	if (!response.ok) {
-		const error = await response.text().catch(() => 'Unknown error');
-		throw new Error(
-			`Cortex API error (${response.status}): ${error}`,
-		);
-	}
-
-	return response.json();
-}
+import { cortexFetch, type ToolContext } from './cortex-fetch.js';
 
 /**
  * synapse_search: Search development context by semantic similarity
@@ -57,7 +17,7 @@ export const synapseSearchSchema = z.object({
 });
 
 export async function handleSynapseSearch(
-	context: SynapseToolContext,
+	context: ToolContext,
 	input: z.infer<typeof synapseSearchSchema>,
 ): Promise<string> {
 	const endpoint = `/SynapseSearch`;
@@ -107,7 +67,7 @@ export const synapseIngestSchema = z.object({
 });
 
 export async function handleSynapseIngest(
-	context: SynapseToolContext,
+	context: ToolContext,
 	input: z.infer<typeof synapseIngestSchema>,
 ): Promise<string> {
 	const endpoint = `/SynapseIngest`;

@@ -107,13 +107,6 @@ export interface MemoryVectorSearchRequest {
 	filter?: Record<string, any>;
 }
 
-/**
- * @deprecated Use bulkStore() method instead of batchUpsert()
- */
-export interface MemoryBatchUpsertRequest {
-	records: MemoryRecord[];
-}
-
 export interface MemoryBatchUpsertResponse {
 	upserted: number;
 	failed: number;

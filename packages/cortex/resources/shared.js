@@ -1,5 +1,3 @@
-import { pipeline } from '@huggingface/transformers';
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -43,13 +41,12 @@ export function log(level, message, context = {}) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Helper: Generate embedding using local ONNX model (Harper-native, no API key)
-// ---------------------------------------------------------------------------
+// Embedding generation via local ONNX model
 
 let embeddingPipeline;
 async function getEmbeddingPipeline() {
 	if (!embeddingPipeline) {
+		const { pipeline } = await import('@huggingface/transformers');
 		embeddingPipeline = await pipeline('feature-extraction', EMBEDDING_MODEL);
 	}
 	return embeddingPipeline;

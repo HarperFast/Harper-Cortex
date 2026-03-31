@@ -7,36 +7,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-
-interface AdminToolContext {
-	cortexUrl: string;
-	cortexToken?: string;
-	cortexSchema?: string;
-}
-
-/**
- * Helper to call Cortex API
- */
-async function cortexFetch(
-	context: AdminToolContext,
-	endpoint: string,
-	options: RequestInit = {},
-): Promise<any> {
-	const url = new URL(endpoint, context.cortexUrl);
-	const headers: Record<string, string> = {
-		'Content-Type': 'application/json',
-		...(options.headers as Record<string, string>),
-	};
-	if (context.cortexToken) {
-		headers['Authorization'] = `Bearer ${context.cortexToken}`;
-	}
-	const response = await fetch(url.toString(), { ...options, headers });
-	if (!response.ok) {
-		const error = await response.text().catch(() => 'Unknown error');
-		throw new Error(`Cortex API error (${response.status}): ${error}`);
-	}
-	return response.json();
-}
+import { cortexFetch, type ToolContext } from './cortex-fetch.js';
 
 // ── Tenant CRUD ──
 
@@ -48,7 +19,7 @@ export const createTenantSchema = z.object({
 });
 
 export async function handleCreateTenant(
-	context: AdminToolContext,
+	context: ToolContext,
 	input: z.infer<typeof createTenantSchema>,
 ): Promise<string> {
 	const uuid = randomUUID();
@@ -96,7 +67,7 @@ export const listTenantsSchema = z.object({
 });
 
 export async function handleListTenants(
-	context: AdminToolContext,
+	context: ToolContext,
 	input: z.infer<typeof listTenantsSchema>,
 ): Promise<string> {
 	const schema = context.cortexSchema || 'data';
@@ -114,7 +85,7 @@ export const getTenantSchema = z.object({
 });
 
 export async function handleGetTenant(
-	context: AdminToolContext,
+	context: ToolContext,
 	input: z.infer<typeof getTenantSchema>,
 ): Promise<string> {
 	const schema = context.cortexSchema || 'data';
@@ -132,7 +103,7 @@ export const updateTenantSchema = z.object({
 });
 
 export async function handleUpdateTenant(
-	context: AdminToolContext,
+	context: ToolContext,
 	input: z.infer<typeof updateTenantSchema>,
 ): Promise<string> {
 	const schema = context.cortexSchema || 'data';
@@ -161,7 +132,7 @@ export const issueTokenSchema = z.object({
 });
 
 export async function handleIssueToken(
-	context: AdminToolContext,
+	context: ToolContext,
 	input: z.infer<typeof issueTokenSchema>,
 ): Promise<string> {
 	const schema = context.cortexSchema || 'data';
@@ -213,7 +184,7 @@ export const revokeTokenSchema = z.object({
 });
 
 export async function handleRevokeToken(
-	context: AdminToolContext,
+	context: ToolContext,
 	input: z.infer<typeof revokeTokenSchema>,
 ): Promise<string> {
 	const schema = context.cortexSchema || 'data';

@@ -242,18 +242,11 @@ async function main() {
 
 	const server = new McpServer({
 		name: '@harperfast/cortex-mcp-server',
-		version: '0.2.0',
+		version: '1.0.1',
 	});
 
 	// ========================================================================
-	// Memory Tools
-	//
-	// NOTE: VectorSearch is intentionally excluded from MCP.
-	// The VectorSearch endpoint accepts pre-computed embedding vectors and is
-	// available for trusted server-to-server paths (e.g., LangChain running
-	// in your backend). It is NOT exposed through MCP because untrusted clients
-	// could craft adversarial vectors to poison the vector space or trick dedup
-	// into overwriting legitimate memories.
+	// Memory Tools (VectorSearch excluded — reserved for trusted server paths)
 	// ========================================================================
 
 	server.tool(
@@ -596,8 +589,7 @@ async function main() {
 			},
 		);
 
-		console.error(`Multi-tenant mode enabled. JWKS URL: ${config.jwksUrl}`);
-		console.error(`Admin tools registered (6 tools). Total tools: 13`);
+		console.error(`Multi-tenant mode enabled (JWKS: ${config.jwksUrl})`);
 	}
 
 	// ========================================================================
@@ -653,7 +645,7 @@ async function main() {
 
 				const healthResponse = {
 					status: 'ok',
-					version: '0.2.0',
+					version: '1.0.1',
 					cortexUrl: config.cortexUrl,
 					transport: 'http',
 					multiTenant: config.multiTenant,
@@ -706,7 +698,6 @@ async function main() {
 			console.log(`Mode: ${config.multiTenant ? 'multi-tenant' : 'single-tenant'}`);
 			console.log(`Auth required: ${config.authRequired}`);
 			console.log(`Health endpoint: http://${config.host}:${config.port}/mcp/health`);
-			console.log(`CIMD metadata: http://${config.host}:${config.port}/.well-known/oauth-protected-resource`);
 		});
 
 		await server.connect(transport);

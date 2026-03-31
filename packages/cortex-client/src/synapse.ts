@@ -1,6 +1,5 @@
 /**
- * Synapse namespace — Universal context broker for multi-tool workflows.
- * Ingest and emit context across Claude Code, Cursor, Windsurf, Copilot, and Markdown.
+ * Synapse namespace — context broker for multi-tool workflows.
  */
 
 import { HttpClient } from './client.js';

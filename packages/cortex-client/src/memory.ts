@@ -1,6 +1,5 @@
 /**
- * Memory namespace — CRUD operations and semantic search for memories.
- * Memories are team context stored from Slack, emails, docs, or API.
+ * Memory namespace — CRUD and semantic search for memories.
  */
 
 import { HttpClient } from './client.js';
@@ -176,18 +175,6 @@ export class Memory {
 		}
 
 		return { upserted, failed, ...(errors.length > 0 ? { errors } : {}) } as MemoryBatchUpsertResponse;
-	}
-
-	/**
-	 * Deprecated: Use bulkStore() instead.
-	 * Batch upsert memory records.
-	 *
-	 * @deprecated Use {@link bulkStore} instead
-	 * @param records - Array of memory records to upsert
-	 * @returns Promise with upsert statistics
-	 */
-	async batchUpsert(records: MemoryRecord[]): Promise<MemoryBatchUpsertResponse> {
-		return this.bulkStore(records);
 	}
 
 	/**

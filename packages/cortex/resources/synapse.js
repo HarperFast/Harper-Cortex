@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { Resource, tables } from 'harperdb';
 import { createHash } from 'node:crypto';
 import { classifyMemory } from './classification-provider.js';
@@ -38,24 +37,22 @@ Respond with valid JSON only, in this exact format:
   "tags": ["<tag1>", "<tag2>"]
 }`;
 
-// ---------------------------------------------------------------------------
-// Legacy Anthropic client (used when CLASSIFICATION_PROVIDER is not set
-// but ANTHROPIC_API_KEY is available, for backward compatibility)
-// ---------------------------------------------------------------------------
+// Legacy Anthropic classification fallback
 
 let anthropicClient;
-function getAnthropicClient() {
+async function getAnthropicClient() {
 	if (!anthropicClient) {
 		if (!process.env.ANTHROPIC_API_KEY) {
 			throw new Error('ANTHROPIC_API_KEY environment variable is required');
 		}
+		const { default: Anthropic } = await import('@anthropic-ai/sdk');
 		anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 	}
 	return anthropicClient;
 }
 
 async function classifyWithLegacyAnthropic(text) {
-	const client = getAnthropicClient();
+	const client = await getAnthropicClient();
 	const message = await client.messages.create({
 		model: CLASSIFICATION_MODEL,
 		max_tokens: 512,
@@ -86,9 +83,7 @@ async function classifyWithLegacyAnthropic(text) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: Classify a Synapse context entry using the provider-agnostic system
-// Falls back to legacy Anthropic SDK when CLASSIFICATION_PROVIDER is not set
-// but ANTHROPIC_API_KEY is available (backward compatibility).
+// Classification helpers
 // ---------------------------------------------------------------------------
 
 export async function classifySynapseEntry(text) {
@@ -126,9 +121,7 @@ export async function classifySynapseEntry(text) {
 	}
 }
 
-/**
- * Map memory classification categories to synapse types.
- */
+// Map memory classification categories to synapse types
 function mapToSynapseType(classification) {
 	// If it's already a valid synapse type, use it directly
 	if (SYNAPSE_TYPES.has(classification)) {
@@ -454,8 +447,7 @@ export class SynapseSearch extends Resource {
 
 		const results = [];
 		for await (const record of SynapseEntryBase.search(searchParams)) {
-			// Normalize Harper's cosine distance (0-2 range) to similarity score (0-1)
-			// For normalized vectors, distance = 2 - 2*similarity, so similarity = 1 - distance/2
+			// Normalize cosine distance to similarity score (0-1)
 			const similarity = Math.max(0, 1 - (record.$distance || 0) / 2);
 			results.push({
 				...record,
@@ -492,8 +484,7 @@ export class SynapseIngest extends Resource {
 
 		for (const entry of entries) {
 			try {
-				// Deterministic ID from content hash -- re-ingesting the same content
-				// upserts the existing record rather than creating duplicates.
+				// Deterministic ID from content hash for idempotent upserts
 				const id = createHash('sha256')
 					.update(`${projectId}:${source}:${entry.content}`)
 					.digest('hex')
@@ -578,8 +569,7 @@ export class SynapseEmit extends Resource {
 			{ attribute: 'status', comparator: 'equals', value: 'active' },
 		];
 
-		// Push single-type filter to search conditions for efficiency.
-		// Multi-type filters are applied post-query since Harper conditions are AND-joined.
+		// Single-type filters go in search conditions; multi-type filters applied post-query
 		const singleTypeFilter = Array.isArray(types) && types.length === 1;
 		if (singleTypeFilter) {
 			conditions.push({ attribute: 'type', comparator: 'equals', value: types[0] });

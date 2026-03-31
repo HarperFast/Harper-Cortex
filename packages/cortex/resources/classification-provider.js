@@ -1,103 +1,9 @@
 /**
- * ============================================================================
- * CORTEX CLASSIFICATION PROVIDER - Provider-Agnostic LLM Classification
- * ============================================================================
- *
- * A flexible, provider-agnostic classification system for Cortex Core memories.
- * Supports multiple LLM providers with graceful degradation to local heuristics.
- *
- * SUPPORTED PROVIDERS:
- * - anthropic: Anthropic Claude API (native @anthropic-ai/sdk or fetch fallback)
- * - openai: OpenAI GPT models (fetch-based, no SDK dependency)
- * - google: Google Gemini API (fetch-based)
- * - ollama: Ollama local/self-hosted models (fetch-based)
- * - openai-compatible: OpenAI-compatible APIs (Groq, Together, Fireworks, vLLM, LM Studio)
- * - local: Keyword matching + heuristics (no API call, fallback-only)
- *
- * CONFIGURATION VIA ENVIRONMENT VARIABLES:
- * ============================================================================
- *
- * Required:
- *   CLASSIFICATION_PROVIDER = anthropic|openai|google|ollama|openai-compatible|local
- *   CLASSIFICATION_MODEL = model name for the provider
- *                          Examples:
- *                          - anthropic: "claude-sonnet-4-5-20250514", "claude-haiku-3-5-20241022"
- *                          - openai: "gpt-4o-mini", "gpt-4-turbo"
- *                          - google: "gemini-2.0-flash", "gemini-1.5-flash"
- *                          - ollama: "llama2", "mistral", "neural-chat"
- *                          - openai-compatible: model name expected by the API
- *
- * Conditionally Required:
- *   CLASSIFICATION_API_KEY = API key for provider (required for: anthropic, openai, google, openai-compatible)
- *   CLASSIFICATION_BASE_URL = Base URL (required for: ollama, openai-compatible)
- *                             Examples:
- *                             - ollama: "http://localhost:11434"
- *                             - groq: "https://api.groq.com/openai/v1"
- *                             - together: "https://api.together.xyz/v1"
- *                             - fireworks: "https://api.fireworks.ai/inference/v1"
- *                             - vllm: "http://localhost:8000/v1"
- *
- * Optional:
- *   CLASSIFICATION_TIMEOUT = API timeout in milliseconds (default: 10000)
- *   CLASSIFICATION_SYSTEM_PROMPT = Custom system prompt (default: built-in)
- *   CLASSIFICATION_LOG_LEVEL = debug|info|warn|error (default: info)
- *
- * QUICK START:
- * ============================================================================
- *
- * Using Claude (Anthropic):
- *   CLASSIFICATION_PROVIDER=anthropic
- *   CLASSIFICATION_MODEL=claude-haiku-3-5-20241022
- *   CLASSIFICATION_API_KEY=sk-ant-xxx
- *
- * Using GPT-4o Mini (OpenAI):
- *   CLASSIFICATION_PROVIDER=openai
- *   CLASSIFICATION_MODEL=gpt-4o-mini
- *   CLASSIFICATION_API_KEY=sk-xxx
- *
- * Using Gemini (Google):
- *   CLASSIFICATION_PROVIDER=google
- *   CLASSIFICATION_MODEL=gemini-2.0-flash
- *   CLASSIFICATION_API_KEY=AIzaXXX
- *
- * Using Ollama (local):
- *   CLASSIFICATION_PROVIDER=ollama
- *   CLASSIFICATION_MODEL=llama2
- *   CLASSIFICATION_BASE_URL=http://localhost:11434
- *
- * Using Groq (OpenAI-compatible):
- *   CLASSIFICATION_PROVIDER=openai-compatible
- *   CLASSIFICATION_MODEL=mixtral-8x7b-32768
- *   CLASSIFICATION_API_KEY=gsk_xxx
- *   CLASSIFICATION_BASE_URL=https://api.groq.com/openai/v1
- *
- * Using Fallback (local):
- *   CLASSIFICATION_PROVIDER=local
- *   (no API key or model required)
- *
- * USAGE:
- * ============================================================================
- *
- *   import { classifyMemory } from './classification-provider.js';
- *
- *   // Returns { classification, entities, summary } or null if unavailable
- *   const result = await classifyMemory('Text to classify');
- *
- *   if (result) {
- *     console.log(result.classification); // e.g., "decision", "action_item"
- *     console.log(result.entities);       // { people: [], projects: [], ... }
- *     console.log(result.summary);        // One-sentence summary
- *   } else {
- *     // No provider configured or unavailable; store memory without classification
- *     console.log('Classification unavailable');
- *   }
- *
- * ============================================================================
+ * Provider-agnostic LLM classification for Cortex memories.
+ * Supports Anthropic, OpenAI, Google, Ollama, OpenAI-compatible APIs, and local heuristics.
+ * See README for configuration and environment variable reference.
  */
 
-/**
- * Valid classification categories
- */
 const VALID_CATEGORIES = new Set([
 	'decision',
 	'action_item',
@@ -110,9 +16,6 @@ const VALID_CATEGORIES = new Set([
 	'feedback',
 ]);
 
-/**
- * Default system prompt for classification
- */
 const DEFAULT_SYSTEM_PROMPT =
 	`You are a message classifier for a team memory system. Classify each message into exactly ONE category and extract key entities.
 
@@ -131,9 +34,6 @@ Respond with valid JSON only, in this exact format:
   "summary": "<one sentence summary>"
 }`;
 
-/**
- * Configuration from environment
- */
 const config = {
 	provider: process.env.CLASSIFICATION_PROVIDER || null,
 	model: process.env.CLASSIFICATION_MODEL || null,
@@ -144,9 +44,6 @@ const config = {
 	logLevel: process.env.CLASSIFICATION_LOG_LEVEL || 'info',
 };
 
-/**
- * Logger
- */
 const LOG_LEVELS = { debug: 0, info: 1, warn: 2, error: 3 };
 
 function log(level, message, context = {}) {
@@ -169,15 +66,10 @@ function log(level, message, context = {}) {
 	}
 }
 
-/**
- * ============================================================================
- * PROVIDER IMPLEMENTATIONS
- * ============================================================================
- */
+// ---------------------------------------------------------------------------
+// Provider implementations
+// ---------------------------------------------------------------------------
 
-/**
- * Anthropic Claude provider
- */
 async function classifyWithAnthropic(text) {
 	if (!config.apiKey) {
 		throw new Error('CLASSIFICATION_API_KEY required for Anthropic provider');
@@ -186,7 +78,6 @@ async function classifyWithAnthropic(text) {
 		throw new Error('CLASSIFICATION_MODEL required for Anthropic provider');
 	}
 
-	// Try using native SDK if available
 	try {
 		const Anthropic = (await import('@anthropic-ai/sdk')).default;
 		const client = new Anthropic({ apiKey: config.apiKey });
@@ -203,7 +94,6 @@ async function classifyWithAnthropic(text) {
 		});
 		return JSON.parse(message.content[0].text);
 	} catch (sdkError) {
-		// Fall back to fetch-based approach
 		log('debug', 'Anthropic SDK not available, using fetch', { error: sdkError.message });
 
 		const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -237,9 +127,6 @@ async function classifyWithAnthropic(text) {
 	}
 }
 
-/**
- * OpenAI GPT provider
- */
 async function classifyWithOpenAI(text) {
 	if (!config.apiKey) {
 		throw new Error('CLASSIFICATION_API_KEY required for OpenAI provider');
@@ -279,9 +166,6 @@ async function classifyWithOpenAI(text) {
 	return JSON.parse(responseText);
 }
 
-/**
- * Google Gemini provider
- */
 async function classifyWithGoogle(text) {
 	if (!config.apiKey) {
 		throw new Error('CLASSIFICATION_API_KEY required for Google provider');
@@ -327,9 +211,6 @@ async function classifyWithGoogle(text) {
 	return JSON.parse(responseText);
 }
 
-/**
- * Ollama provider (self-hosted)
- */
 async function classifyWithOllama(text) {
 	if (!config.baseUrl) {
 		throw new Error('CLASSIFICATION_BASE_URL required for Ollama provider');
@@ -371,9 +252,6 @@ async function classifyWithOllama(text) {
 	return JSON.parse(data.message.content);
 }
 
-/**
- * OpenAI-compatible provider (Groq, Together, Fireworks, vLLM, LM Studio, etc.)
- */
 async function classifyWithOpenAICompatible(text) {
 	if (!config.baseUrl) {
 		throw new Error('CLASSIFICATION_BASE_URL required for OpenAI-compatible provider');
@@ -387,7 +265,6 @@ async function classifyWithOpenAICompatible(text) {
 		'Content-Type': 'application/json',
 	};
 
-	// Add Authorization header if API key is provided
 	if (config.apiKey) {
 		headers.Authorization = `Bearer ${config.apiKey}`;
 	}
@@ -423,13 +300,9 @@ async function classifyWithOpenAICompatible(text) {
 	return JSON.parse(responseText);
 }
 
-/**
- * Local heuristic-based fallback (no API call)
- */
 async function classifyWithLocal(text) {
 	const lowerText = (text || '').toLowerCase();
 
-	// Decision keywords
 	if (/decision|decided|will go with|agreed to|committed to|choosing|chose/i.test(lowerText)) {
 		return {
 			classification: 'decision',
@@ -438,7 +311,6 @@ async function classifyWithLocal(text) {
 		};
 	}
 
-	// Action item keywords
 	if (
 		/action item|todo|task|@everyone|assigned|need to|must|should do|need someone to/i.test(
 			lowerText,
@@ -451,7 +323,6 @@ async function classifyWithLocal(text) {
 		};
 	}
 
-	// Question keywords
 	if (/\?|how do|what is|why|when will|can someone|does|has anyone/i.test(lowerText)) {
 		return {
 			classification: 'question',
@@ -460,7 +331,6 @@ async function classifyWithLocal(text) {
 		};
 	}
 
-	// Announcement keywords
 	if (/announcement|announce|launched|released|new|available|now live/i.test(lowerText)) {
 		return {
 			classification: 'announcement',
@@ -469,7 +339,6 @@ async function classifyWithLocal(text) {
 		};
 	}
 
-	// Reference keywords
 	if (/see|check|documentation|docs|link|reference|here|file|attachment|guide/i.test(lowerText)) {
 		return {
 			classification: 'reference',
@@ -478,7 +347,6 @@ async function classifyWithLocal(text) {
 		};
 	}
 
-	// Status update keywords
 	if (/update|completed|finished|progress|status|working on|done|ready/i.test(lowerText)) {
 		return {
 			classification: 'status_update',
@@ -487,7 +355,6 @@ async function classifyWithLocal(text) {
 		};
 	}
 
-	// Feedback keywords
 	if (
 		/feedback|suggest|improvement|comment|thoughts|opinion|review|not working|bug|issue/i.test(
 			lowerText,
@@ -500,7 +367,6 @@ async function classifyWithLocal(text) {
 		};
 	}
 
-	// Knowledge/teaching
 	if (/note|remember|important|tip|trick|best practice|pattern|approach|method/i.test(lowerText)) {
 		return {
 			classification: 'knowledge',
@@ -509,7 +375,6 @@ async function classifyWithLocal(text) {
 		};
 	}
 
-	// Default to discussion
 	return {
 		classification: 'discussion',
 		entities: extractLocalEntities(text),
@@ -517,9 +382,6 @@ async function classifyWithLocal(text) {
 	};
 }
 
-/**
- * Extract entities from text using simple heuristics
- */
 function extractLocalEntities(text) {
 	const entities = {
 		people: [],
@@ -531,15 +393,12 @@ function extractLocalEntities(text) {
 
 	if (!text) { return entities; }
 
-	// Extract @mentions
 	const mentions = text.match(/@(\w+)/g) || [];
 	entities.people = [...new Set(mentions.map((m) => m.substring(1)))];
 
-	// Extract #hashtags as topics
 	const hashtags = text.match(/#(\w+)/g) || [];
 	entities.topics = [...new Set(hashtags.map((h) => h.substring(1)))];
 
-	// Simple date patterns (YYYY-MM-DD, MM/DD/YYYY, "tomorrow", "next week", etc.)
 	const datePatterns = text.match(/\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4}|tomorrow|today|next week|next month/gi)
 		|| [];
 	entities.dates = [...new Set(datePatterns)];
@@ -547,32 +406,23 @@ function extractLocalEntities(text) {
 	return entities;
 }
 
-/**
- * ============================================================================
- * MAIN ENTRY POINT
- * ============================================================================
- */
+// ---------------------------------------------------------------------------
+// Main entry point
+// ---------------------------------------------------------------------------
 
 /**
  * Classify a memory text using the configured provider.
- * Returns { classification, entities, summary } or null if unavailable.
- *
- * @param {string} text - The text to classify
- * @param {Object} options - Optional overrides
- * @returns {Promise<Object|null>} Classification result or null
+ * Returns { classification, entities, summary } or null if no provider is configured.
  */
 export async function classifyMemory(text, options = {}) {
-	// Validate input
 	if (!text || typeof text !== 'string' || text.trim().length === 0) {
 		log('debug', 'Empty text provided for classification');
 		return null;
 	}
 
-	// Use config overrides if provided
 	const provider = options.provider || config.provider;
 	const timeout = options.timeout || config.timeout;
 
-	// No provider configured
 	if (!provider) {
 		log('debug', 'No classification provider configured, skipping classification');
 		return null;
@@ -614,16 +464,13 @@ export async function classifyMemory(text, options = {}) {
 			clearTimeout(timeoutHandle);
 		}
 
-		// Validate and normalize result
 		if (!result || typeof result !== 'object') {
 			log('warn', 'Provider returned non-object result, using fallback');
 			return createFallbackClassification(text);
 		}
 
-		// Map old field name to new (for backward compatibility)
 		const classification = result.classification || result.category || 'discussion';
 
-		// Validate category
 		if (!VALID_CATEGORIES.has(classification)) {
 			log('warn', 'Invalid classification returned by provider, using fallback', {
 				invalidCategory: classification,
@@ -631,7 +478,6 @@ export async function classifyMemory(text, options = {}) {
 			return createFallbackClassification(text);
 		}
 
-		// Normalize entities
 		const entities = result.entities || {};
 		const normalizedEntities = {
 			people: Array.isArray(entities.people) ? entities.people : [],
@@ -641,7 +487,6 @@ export async function classifyMemory(text, options = {}) {
 			dates: Array.isArray(entities.dates) ? entities.dates : [],
 		};
 
-		// Normalize summary
 		const summary = result.summary && typeof result.summary === 'string'
 			? result.summary.substring(0, 500)
 			: text.substring(0, 100);
@@ -663,9 +508,6 @@ export async function classifyMemory(text, options = {}) {
 	}
 }
 
-/**
- * Create a fallback classification when API is unavailable
- */
 function createFallbackClassification(text) {
 	return {
 		classification: 'discussion',
@@ -680,9 +522,7 @@ function createFallbackClassification(text) {
 	};
 }
 
-/**
- * Utility: Get current provider configuration (useful for debugging)
- */
+/** Get current provider configuration (useful for debugging). */
 export function getProviderConfig() {
 	return {
 		provider: config.provider || 'none',
@@ -694,9 +534,7 @@ export function getProviderConfig() {
 	};
 }
 
-/**
- * Utility: Validate configuration without making API calls
- */
+/** Validate configuration without making API calls. */
 export function validateConfig() {
 	const issues = [];
 
@@ -719,7 +557,6 @@ export function validateConfig() {
 		);
 	}
 
-	// Provider-specific validation
 	if (config.provider !== 'local') {
 		if (!config.model) {
 			issues.push('CLASSIFICATION_MODEL required for non-local providers');

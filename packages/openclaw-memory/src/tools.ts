@@ -186,9 +186,6 @@ export function createMemoryTools(db: CortexMemoryDB, context: ToolContext) {
 	};
 }
 
-/**
- * Tool response type helpers
- */
 export interface MemoryRecallResult {
 	success: boolean;
 	results?: Array<{

@@ -4,49 +4,9 @@
  */
 
 import { z } from 'zod';
-import { formatAuthHeader } from '../auth.js';
 import { verifyRecordOwnership } from '../namespace.js';
 import { sanitizeForRetrieval, sanitizeForStorage } from '../safety.js';
-
-interface MemoryToolContext {
-	cortexUrl: string;
-	cortexToken?: string;
-	cortexSchema?: string;
-	userId?: string;
-}
-
-/**
- * Helper to fetch from Cortex API
- */
-async function cortexFetch(
-	context: MemoryToolContext,
-	endpoint: string,
-	options: RequestInit = {},
-): Promise<any> {
-	const url = new URL(endpoint, context.cortexUrl);
-	const headers: Record<string, string> = {
-		'Content-Type': 'application/json',
-		...(options.headers as Record<string, string>),
-	};
-
-	if (context.cortexToken) {
-		headers['Authorization'] = formatAuthHeader(context.cortexToken);
-	}
-
-	const response = await fetch(url.toString(), {
-		...options,
-		headers,
-	});
-
-	if (!response.ok) {
-		const error = await response.text().catch(() => 'Unknown error');
-		throw new Error(
-			`Cortex API error (${response.status}): ${error}`,
-		);
-	}
-
-	return response.json();
-}
+import { cortexFetch, type ToolContext } from './cortex-fetch.js';
 
 /**
  * memory_search: Search memories by semantic similarity
@@ -58,7 +18,7 @@ export const memorySearchSchema = z.object({
 });
 
 export async function handleMemorySearch(
-	context: MemoryToolContext,
+	context: ToolContext,
 	input: z.infer<typeof memorySearchSchema>,
 ): Promise<string> {
 	const endpoint = `/MemorySearch`;
@@ -108,7 +68,7 @@ export const memoryStoreSchema = z.object({
 });
 
 export async function handleMemoryStore(
-	context: MemoryToolContext,
+	context: ToolContext,
 	input: z.infer<typeof memoryStoreSchema>,
 ): Promise<string> {
 	// Sanitize input before storage
@@ -163,7 +123,7 @@ export const memoryRecallSchema = z.object({
 });
 
 export async function handleMemoryRecall(
-	context: MemoryToolContext,
+	context: ToolContext,
 	input: z.infer<typeof memoryRecallSchema>,
 ): Promise<string> {
 	const endpoint = `/MemoryTable/${input.id}`;
@@ -205,7 +165,7 @@ export const memoryForgetSchema = z.object({
 });
 
 export async function handleMemoryForget(
-	context: MemoryToolContext,
+	context: ToolContext,
 	input: z.infer<typeof memoryForgetSchema>,
 ): Promise<string> {
 	const endpoint = `/MemoryTable/${input.id}`;
@@ -249,7 +209,7 @@ export const memoryCountSchema = z.object({
 });
 
 export async function handleMemoryCount(
-	context: MemoryToolContext,
+	context: ToolContext,
 	input: z.infer<typeof memoryCountSchema>,
 ): Promise<string> {
 	const endpoint = `/MemoryCount`;
