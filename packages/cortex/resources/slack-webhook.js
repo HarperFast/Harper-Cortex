@@ -7,6 +7,9 @@ const { Memory } = tables;
 
 // ---------------------------------------------------------------------------
 // Helper: Verify Slack request signature (HMAC-SHA256)
+// NOTE: Not currently called — Harper Resource classes don't expose HTTP
+// headers. Retained for future use when Harper adds header access.
+// See verifyBodyToken below for the active verification mechanism.
 // ---------------------------------------------------------------------------
 
 export function verifySlackSignature(signingSecret, signature, timestamp, body) {
@@ -31,11 +34,39 @@ export function verifySlackSignature(signingSecret, signature, timestamp, body) 
 }
 
 // ---------------------------------------------------------------------------
+// Helper: Verify Slack body-level verification token
+// Harper Resource classes don't expose HTTP headers, so we verify using
+// the legacy Verification Token that Slack includes in every event body
+// (Slack app > Basic Information > App Credentials > Verification Token).
+// ---------------------------------------------------------------------------
+
+function verifyBodyToken(dataToken) {
+	const expected = process.env.SLACK_VERIFICATION_TOKEN;
+	if (!expected) {
+		log('warn', 'SLACK_VERIFICATION_TOKEN not set — webhook requests are unauthenticated');
+		return true;
+	}
+	if (!dataToken || typeof dataToken !== 'string') { return false; }
+	try {
+		return timingSafeEqual(Buffer.from(dataToken), Buffer.from(expected));
+	} catch {
+		return false;
+	}
+}
+
+// ---------------------------------------------------------------------------
 // SlackWebhook - Receives Slack Events API POST requests
 // ---------------------------------------------------------------------------
 
 export class SlackWebhook extends Resource {
 	async post(data) {
+		if (!verifyBodyToken(data?.token)) {
+			log('warn', 'Rejected webhook: invalid verification token');
+			// Note: Harper Resources always return HTTP 200 — the status field here
+			// is application-level only. The payload is still rejected (not processed).
+			return { status: 401, message: 'unauthorized' };
+		}
+
 		// Handle Slack URL verification challenge
 		if (data?.type === 'url_verification') {
 			log('info', 'Slack URL verification challenge received');

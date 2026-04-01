@@ -180,13 +180,13 @@ See [Cortex Core README](packages/cortex/README.md) for full request/response ex
 
 ### Ingestion Sources
 
-| Platform | Method             | Status                 |
-| -------- | ------------------ | ---------------------- |
-| Slack    | Events API         | Included               |
-| GitHub   | Webhooks           | Add via Resource class |
-| Linear   | Webhooks           | Add via Resource class |
-| Jira     | Webhooks           | Add via Resource class |
-| Discord  | Gateway / Webhooks | Add via Resource class |
+| Platform | Method             | Status                                                            |
+| -------- | ------------------ | ----------------------------------------------------------------- |
+| Slack    | Events API         | Included — [setup guide](packages/cortex/docs/slack-app-setup.md) |
+| GitHub   | Webhooks           | Add via Resource class                                            |
+| Linear   | Webhooks           | Add via Resource class                                            |
+| Jira     | Webhooks           | Add via Resource class                                            |
+| Discord  | Gateway / Webhooks | Add via Resource class                                            |
 
 ### Embedding Providers
 
