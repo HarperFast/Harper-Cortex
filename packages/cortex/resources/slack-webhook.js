@@ -62,6 +62,8 @@ export class SlackWebhook extends Resource {
 	async post(data) {
 		if (!verifyBodyToken(data?.token)) {
 			log('warn', 'Rejected webhook: invalid verification token');
+			// Note: Harper Resources always return HTTP 200 — the status field here
+			// is application-level only. The payload is still rejected (not processed).
 			return { status: 401, message: 'unauthorized' };
 		}
 
