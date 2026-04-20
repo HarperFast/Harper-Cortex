@@ -17,9 +17,11 @@ const { mockSearch, MockMemory, MockSynapseEntry, mockExtractor } = vi.hoisted((
 	return { mockSearch, MockMemory, MockSynapseEntry, mockExtractor };
 });
 
-vi.mock('harperdb', () => ({
+vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+	transaction: async (cb) => cb(),
+	default: { transaction: async (cb) => cb() },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -53,8 +55,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { source: 'slack' },
 		});
@@ -75,8 +76,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { sourceType: 'thread_reply' },
 		});
@@ -96,8 +96,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { classification: 'decision' },
 		});
@@ -117,8 +116,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { channelId: 'C123456' },
 		});
@@ -138,8 +136,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { authorId: 'U123456' },
 		});
@@ -159,8 +156,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: {
 				source: 'slack',
@@ -187,8 +183,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: {
 				source: 'slack',
@@ -212,8 +207,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: {
 				source: 'slack',
@@ -240,8 +234,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: {
 				source: 'slack',
@@ -264,8 +257,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: {},
 		});
@@ -304,8 +296,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			}
 		});
 
-		const search = new MemorySearch();
-		const result = await search.post({
+		const result = await MemorySearch.post(null, {
 			query: 'what action items',
 			filters: {
 				source: 'slack',
@@ -336,8 +327,7 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { source: 'slack' },
 		});
@@ -357,9 +347,8 @@ describe('MemorySearch - Generic Metadata Filtering', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
 		// Simulate old-style usage with only known fields
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: {
 				source: 'slack',

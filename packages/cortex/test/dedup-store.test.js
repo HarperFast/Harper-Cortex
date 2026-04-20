@@ -13,9 +13,11 @@ const { mockSearch, MockMemory, mockClassifyResult, mockExtractor } = vi.hoisted
 	return { mockSearch, MockMemory, mockClassifyResult, mockExtractor };
 });
 
-vi.mock('harperdb', () => ({
+vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: class {} },
+	transaction: async (cb) => cb(),
+	default: { transaction: async (cb) => cb() },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -38,18 +40,16 @@ const { MemoryStore } = await import('../resources.js');
 
 describe('MemoryStore with Deduplication', () => {
 	it('returns error for missing text', async () => {
-		const store = new MemoryStore();
-		const result = await store.post({});
+		const result = await MemoryStore.post(null, {});
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('text is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('text is required'));
 	});
 
 	it('returns error for empty text', async () => {
-		const store = new MemoryStore();
-		const result = await store.post({ text: '' });
+		const result = await MemoryStore.post(null, { text: '' });
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('stores memory without dedup threshold', async () => {
@@ -71,8 +71,7 @@ describe('MemoryStore with Deduplication', () => {
 			],
 		}));
 
-		const store = new MemoryStore();
-		const result = await store.post({ text: 'This is a new memory' });
+		const result = await MemoryStore.post(null, { text: 'This is a new memory' });
 
 		assert.equal(result.stored, true);
 		assert.equal(result.deduplicated, false);
@@ -98,8 +97,7 @@ describe('MemoryStore with Deduplication', () => {
 			yield existingRecord;
 		});
 
-		const store = new MemoryStore();
-		const result = await store.post({
+		const result = await MemoryStore.post(null, {
 			text: 'Very similar memory',
 			dedupThreshold: 0.9,
 		});
@@ -141,8 +139,7 @@ describe('MemoryStore with Deduplication', () => {
 			],
 		}));
 
-		const store = new MemoryStore();
-		const result = await store.post({
+		const result = await MemoryStore.post(null, {
 			text: 'Unrelated memory',
 			dedupThreshold: 0.9,
 		});
@@ -161,8 +158,7 @@ describe('MemoryStore with Deduplication', () => {
 			capturedParams = params;
 		});
 
-		const store = new MemoryStore();
-		await store.post({
+		await MemoryStore.post(null, {
 			text: 'Test memory',
 			dedupThreshold: 0.9,
 			agentId: 'agent-xyz',
@@ -194,8 +190,7 @@ describe('MemoryStore with Deduplication', () => {
 			],
 		}));
 
-		const store = new MemoryStore();
-		await store.post({
+		await MemoryStore.post(null, {
 			text: 'Knowledge to store',
 			dedupThreshold: 0.95,
 			agentId: 'agent-123',
@@ -218,8 +213,7 @@ describe('MemoryStore with Deduplication', () => {
 			capturedParams = params;
 		});
 
-		const store = new MemoryStore();
-		await store.post({
+		await MemoryStore.post(null, {
 			text: 'Test memory',
 			dedupThreshold: 0.5,
 		});

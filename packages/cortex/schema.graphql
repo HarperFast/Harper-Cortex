@@ -1,4 +1,4 @@
-type SynapseEntry @table {
+type SynapseEntry @table @export {
 	id: ID @primaryKey
 	projectId: String @indexed
 	type: String @indexed
@@ -17,7 +17,7 @@ type SynapseEntry @table {
 	metadata: Any
 }
 
-type Memory @table {
+type Memory @table @export {
 	id: ID @primaryKey
 	rawText: String
 	source: String @indexed

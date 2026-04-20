@@ -18,9 +18,11 @@ const { MockMemory, mockSynapsePut, MockSynapseEntry, mockCreate, mockExtractor 
 	return { MockMemory, mockSynapsePut, MockSynapseEntry, mockCreate, mockExtractor };
 });
 
-vi.mock('harperdb', () => ({
+vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+	transaction: async (cb) => cb(),
+	default: { transaction: async (cb) => cb() },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -64,39 +66,38 @@ describe('SynapseIngest', () => {
 	});
 
 	it('returns error for missing content', async () => {
-		const ingest = new SynapseIngest();
-		const result = await ingest.post({ source: 'claude_code', projectId: 'proj-1' });
+		const result = await SynapseIngest.post(null, { source: 'claude_code', projectId: 'proj-1' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('content is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('content is required'));
 	});
 
 	it('returns error for missing projectId', async () => {
-		const ingest = new SynapseIngest();
-		const result = await ingest.post({ source: 'claude_code', content: 'some content' });
+		const result = await SynapseIngest.post(null, { source: 'claude_code', content: 'some content' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('projectId is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('projectId is required'));
 	});
 
 	it('returns error for invalid source', async () => {
-		const ingest = new SynapseIngest();
-		const result = await ingest.post({ source: 'invalid_tool', content: 'some content', projectId: 'proj-1' });
+		const result = await SynapseIngest.post(null, {
+			source: 'invalid_tool',
+			content: 'some content',
+			projectId: 'proj-1',
+		});
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('source must be one of'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('source must be one of'));
 	});
 
 	it('returns error for missing source', async () => {
-		const ingest = new SynapseIngest();
-		const result = await ingest.post({ content: 'some content', projectId: 'proj-1' });
+		const result = await SynapseIngest.post(null, { content: 'some content', projectId: 'proj-1' });
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('stores parsed entries and returns count', async () => {
-		const ingest = new SynapseIngest();
-		const result = await ingest.post({
+		const result = await SynapseIngest.post(null, {
 			source: 'copilot',
 			content: 'Always use TypeScript. Never use any.',
 			projectId: 'my-project',
@@ -108,8 +109,7 @@ describe('SynapseIngest', () => {
 	});
 
 	it('stores each entry with correct fields', async () => {
-		const ingest = new SynapseIngest();
-		await ingest.post({
+		await SynapseIngest.post(null, {
 			source: 'copilot',
 			content: 'Always write tests.',
 			projectId: 'my-project',
@@ -123,14 +123,13 @@ describe('SynapseIngest', () => {
 	});
 
 	it('generates deterministic IDs for deduplication', async () => {
-		const ingest = new SynapseIngest();
 		const payload = { source: 'copilot', content: 'Always write tests.', projectId: 'my-project' };
 
-		await ingest.post(payload);
+		await SynapseIngest.post(null, payload);
 		const firstId = mockSynapsePut.mock.calls[0][0].id;
 
 		mockSynapsePut.mockClear();
-		await ingest.post(payload);
+		await SynapseIngest.post(null, payload);
 		const secondId = mockSynapsePut.mock.calls[0][0].id;
 
 		assert.equal(firstId, secondId);
@@ -141,8 +140,7 @@ describe('SynapseIngest', () => {
 	describe('parsers', () => {
 		it('parseClaudeCode splits content on ## headings', async () => {
 			const claudeMd = `## Architecture\n\nUse Harper for storage.\n\n## Testing\n\nAlways run npm test.`;
-			const ingest = new SynapseIngest();
-			const result = await ingest.post({
+			const result = await SynapseIngest.post(null, {
 				source: 'claude_code',
 				content: claudeMd,
 				projectId: 'proj-1',
@@ -154,8 +152,7 @@ describe('SynapseIngest', () => {
 
 		it('parseClaudeCode preserves preamble before first heading', async () => {
 			const claudeMd = `# Cortex\n\nIntro text here.\n\n## Architecture\n\nUse Harper for storage.`;
-			const ingest = new SynapseIngest();
-			const result = await ingest.post({
+			const result = await SynapseIngest.post(null, {
 				source: 'claude_code',
 				content: claudeMd,
 				projectId: 'proj-1',
@@ -170,8 +167,7 @@ describe('SynapseIngest', () => {
 		});
 
 		it('parseClaudeCode falls back to single entry when no headings', async () => {
-			const ingest = new SynapseIngest();
-			const result = await ingest.post({
+			const result = await SynapseIngest.post(null, {
 				source: 'claude_code',
 				content: 'This is a plain instruction without headings.',
 				projectId: 'proj-1',
@@ -183,8 +179,7 @@ describe('SynapseIngest', () => {
 		it('parseCursor extracts frontmatter and body as mdc format', async () => {
 			const mdc =
 				`---\ndescription: Use TypeScript everywhere\nglobs: **/*.ts\n---\n\nAlways prefer TypeScript over JavaScript.`;
-			const ingest = new SynapseIngest();
-			const result = await ingest.post({
+			const result = await SynapseIngest.post(null, {
 				source: 'cursor',
 				content: mdc,
 				projectId: 'proj-1',
@@ -196,8 +191,7 @@ describe('SynapseIngest', () => {
 		});
 
 		it('parseCursor falls back to single entry without frontmatter', async () => {
-			const ingest = new SynapseIngest();
-			const result = await ingest.post({
+			const result = await SynapseIngest.post(null, {
 				source: 'cursor',
 				content: 'Plain rule text without frontmatter.',
 				projectId: 'proj-1',
@@ -208,8 +202,7 @@ describe('SynapseIngest', () => {
 
 		it('parseWindsurf splits on ## headings', async () => {
 			const rules = `## Naming\n\nUse camelCase.\n\n## Structure\n\nOne component per file.`;
-			const ingest = new SynapseIngest();
-			const result = await ingest.post({
+			const result = await SynapseIngest.post(null, {
 				source: 'windsurf',
 				content: rules,
 				projectId: 'proj-1',
@@ -219,8 +212,7 @@ describe('SynapseIngest', () => {
 		});
 
 		it('parseCopilot passes through as single entry', async () => {
-			const ingest = new SynapseIngest();
-			const result = await ingest.post({
+			const result = await SynapseIngest.post(null, {
 				source: 'copilot',
 				content: 'Always use British English in comments.',
 				projectId: 'proj-1',
@@ -230,8 +222,7 @@ describe('SynapseIngest', () => {
 		});
 
 		it('manual source passes through as single entry', async () => {
-			const ingest = new SynapseIngest();
-			const result = await ingest.post({
+			const result = await SynapseIngest.post(null, {
 				source: 'manual',
 				content: 'A manually entered context note.',
 				projectId: 'proj-1',

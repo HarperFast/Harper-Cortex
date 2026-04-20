@@ -1,6 +1,6 @@
 {
 	"name": "@harperfast/cortex",
-	"version": "1.0.6",
+	"version": "2.0.0",
 	"description": "Open-source AI memory system powered by Harper Fabric. Clone, configure, deploy.",
 	"type": "module",
 	"main": "resources.js",
@@ -21,9 +21,9 @@
 		"directory": "packages/cortex"
 	},
 	"scripts": {
-		"start": "harperdb run .",
-		"dev": "harperdb dev .",
-		"deploy": "npx -y dotenv-cli -- harperdb deploy . restart=rolling replicated=true",
+		"start": "harper run .",
+		"dev": "harper dev .",
+		"deploy": "npx -y dotenv-cli -- harper deploy . restart=rolling replicated=true",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage"
@@ -36,7 +36,7 @@
 		"@huggingface/transformers": "^3.8.1"
 	},
 	"devDependencies": {
-		"harperdb": "^4.7.24"
+		"harper": "^5.0.0"
 	},
 	"publishConfig": {
 		"access": "public"

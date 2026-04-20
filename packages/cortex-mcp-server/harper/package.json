@@ -11,7 +11,7 @@
 		"test": "node --experimental-test-module-mocks --test test/*.test.js"
 	},
 	"devDependencies": {
-		"harperdb": "*",
+		"harper": "*",
 		"dotenv-cli": "^11.0.0"
 	},
 	"engines": {

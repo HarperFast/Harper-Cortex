@@ -17,9 +17,11 @@ const { mockSearch, MockMemory, MockSynapseEntry, mockExtractor } = vi.hoisted((
 	return { mockSearch, MockMemory, MockSynapseEntry, mockExtractor };
 });
 
-vi.mock('harperdb', () => ({
+vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+	transaction: async (cb) => cb(),
+	default: { transaction: async (cb) => cb() },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -40,25 +42,22 @@ const { MemorySearch } = await import('../resources.js');
 
 describe('MemorySearch', () => {
 	it('returns error for missing query', async () => {
-		const search = new MemorySearch();
-		const result = await search.post({});
+		const result = await MemorySearch.post(null, {});
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('query is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('query is required'));
 	});
 
 	it('returns error for empty string query', async () => {
-		const search = new MemorySearch();
-		const result = await search.post({ query: '' });
+		const result = await MemorySearch.post(null, { query: '' });
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('returns error for null data', async () => {
-		const search = new MemorySearch();
-		const result = await search.post(null);
+		const result = await MemorySearch.post(null, null);
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('performs vector search with valid query', async () => {
@@ -78,8 +77,7 @@ describe('MemorySearch', () => {
 			yield fakeResult;
 		});
 
-		const search = new MemorySearch();
-		const result = await search.post({ query: 'caching decision' });
+		const result = await MemorySearch.post(null, { query: 'caching decision' });
 
 		assert.ok(result.results);
 		assert.equal(result.count, 1);
@@ -97,8 +95,7 @@ describe('MemorySearch', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({ query: 'test', limit: 5 });
+		await MemorySearch.post(null, { query: 'test', limit: 5 });
 
 		assert.equal(capturedParams.limit, 5);
 	});
@@ -113,8 +110,7 @@ describe('MemorySearch', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({ query: 'test', limit: 500 });
+		await MemorySearch.post(null, { query: 'test', limit: 500 });
 
 		assert.equal(capturedParams.limit, 100);
 	});
@@ -129,8 +125,7 @@ describe('MemorySearch', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { classification: 'decision' },
 		});
@@ -150,8 +145,7 @@ describe('MemorySearch', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { classification: 'decision', source: 'slack' },
 		});
@@ -170,8 +164,7 @@ describe('MemorySearch', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({ query: 'test', limit: 'invalid' });
+		await MemorySearch.post(null, { query: 'test', limit: 'invalid' });
 
 		assert.equal(capturedParams.limit, 10);
 	});

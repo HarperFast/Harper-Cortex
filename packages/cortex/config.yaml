@@ -9,3 +9,8 @@ graphqlSchema:
 jsResource:
   files: 'resources.js'
   resources: '*'
+
+install:
+  allowInstallScripts: true
+
+dependencyLoader: native

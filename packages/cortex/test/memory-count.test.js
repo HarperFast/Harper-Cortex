@@ -11,9 +11,11 @@ const { mockSearch, MockMemory } = vi.hoisted(() => {
 	return { mockSearch, MockMemory };
 });
 
-vi.mock('harperdb', () => ({
+vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: class {} },
+	transaction: async (cb) => cb(),
+	default: { transaction: async (cb) => cb() },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -37,8 +39,7 @@ describe('MemoryCount', () => {
 	it('returns 0 for no memories', async () => {
 		mockSearch.mockImplementation(function*() {});
 
-		const counter = new MemoryCount();
-		const result = await counter.post({});
+		const result = await MemoryCount.post(null, {});
 
 		assert.equal(result.count, 0);
 	});
@@ -50,8 +51,7 @@ describe('MemoryCount', () => {
 			yield { id: '3' };
 		});
 
-		const counter = new MemoryCount();
-		const result = await counter.post({});
+		const result = await MemoryCount.post(null, {});
 
 		assert.equal(result.count, 3);
 	});
@@ -69,8 +69,7 @@ describe('MemoryCount', () => {
 			yield { id: '2' };
 		});
 
-		const counter = new MemoryCount();
-		const result = await counter.post({ filters: { source: 'slack' } });
+		const result = await MemoryCount.post(null, { filters: { source: 'slack' } });
 
 		assert.equal(result.count, 2);
 		assert.equal(capturedParams.conditions.attribute, 'source');
@@ -88,8 +87,7 @@ describe('MemoryCount', () => {
 			yield { id: '1' };
 		});
 
-		const counter = new MemoryCount();
-		const result = await counter.post({ filters: { classification: 'decision' } });
+		const result = await MemoryCount.post(null, { filters: { classification: 'decision' } });
 
 		assert.equal(result.count, 1);
 		assert.equal(capturedParams.conditions.attribute, 'classification');
@@ -107,8 +105,7 @@ describe('MemoryCount', () => {
 			yield { id: '1' };
 		});
 
-		const counter = new MemoryCount();
-		const result = await counter.post({
+		const result = await MemoryCount.post(null, {
 			filters: { source: 'slack', channelId: '#engineering' },
 		});
 
@@ -126,8 +123,7 @@ describe('MemoryCount', () => {
 			yield { id: '3' };
 		});
 
-		const counter = new MemoryCount();
-		const result = await counter.post({ filters: { agentId: 'agent-456' } });
+		const result = await MemoryCount.post(null, { filters: { agentId: 'agent-456' } });
 
 		assert.equal(result.count, 3);
 		assert.equal(capturedParams.conditions.attribute, 'agentId');

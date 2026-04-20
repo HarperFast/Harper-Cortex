@@ -1,7 +1,8 @@
-import { Resource, tables } from 'harperdb';
+import { Resource, tables, transaction } from 'harper';
 import { createHash, randomUUID } from 'node:crypto';
 import { classifyMemory } from './classification-provider.js';
 import {
+	cortexError,
 	DEFAULT_SEARCH_LIMIT,
 	EMBEDDING_MODEL,
 	generateEmbedding,
@@ -130,15 +131,26 @@ function createFallbackClassification(text) {
 // ---------------------------------------------------------------------------
 
 export class MemorySearch extends Resource {
-	async post(data) {
+	static async post(_req, data) {
+		data = await data;
 		const { query, limit, filters } = data || {};
 
 		if (!query || typeof query !== 'string' || query.trim().length === 0) {
-			return { error: 'query is required and must be a non-empty string' };
+			return cortexError(
+				'missing-query',
+				'Missing required field: query',
+				400,
+				'query is required and must be a non-empty string',
+			);
 		}
 
 		if (process.env.REQUIRE_AGENT_NAMESPACE === 'true' && !filters?.agentId) {
-			return { error: 'agentId is required when REQUIRE_AGENT_NAMESPACE is enabled' };
+			return cortexError(
+				'missing-agent-id',
+				'Missing required field: agentId',
+				400,
+				'agentId is required when REQUIRE_AGENT_NAMESPACE is enabled',
+			);
 		}
 
 		const searchLimit = Math.min(
@@ -222,11 +234,17 @@ export class MemorySearch extends Resource {
 // ---------------------------------------------------------------------------
 
 export class MemoryCount extends Resource {
-	async post(data) {
+	static async post(_req, data) {
+		data = await data;
 		const { filters } = data || {};
 
 		if (process.env.REQUIRE_AGENT_NAMESPACE === 'true' && !filters?.agentId) {
-			return { error: 'agentId is required when REQUIRE_AGENT_NAMESPACE is enabled' };
+			return cortexError(
+				'missing-agent-id',
+				'Missing required field: agentId',
+				400,
+				'agentId is required when REQUIRE_AGENT_NAMESPACE is enabled',
+			);
 		}
 
 		log('info', 'Memory count requested', { filters });
@@ -276,11 +294,17 @@ export class MemoryCount extends Resource {
 // ---------------------------------------------------------------------------
 
 export class MemoryStore extends Resource {
-	async post(data) {
+	static async post(_req, data) {
+		data = await data;
 		const { text, dedupThreshold, agentId, channelId, authorId, sourceType, threadTs, supersedes } = data || {};
 
 		if (!text || typeof text !== 'string' || text.trim().length === 0) {
-			return { error: 'text is required and must be a non-empty string' };
+			return cortexError(
+				'missing-text',
+				'Missing required field: text',
+				400,
+				'text is required and must be a non-empty string',
+			);
 		}
 
 		log('info', 'Memory store requested', { dedupThreshold, hasDedup: !!dedupThreshold });
@@ -399,7 +423,7 @@ export class MemoryStore extends Resource {
 
 export class MemoryTable extends Memory {
 	async get(target) {
-		const record = super.get(target);
+		const record = await super.get(target);
 		if (record && typeof record === 'object') {
 			return {
 				id: record.id,
@@ -430,17 +454,18 @@ export class MemoryTable extends Memory {
 // ---------------------------------------------------------------------------
 
 export class VectorSearch extends Resource {
-	async post(data) {
+	static async post(_req, data) {
+		data = await data;
 		const { vector, limit, filter } = data || {};
 
 		if (!vector) {
-			return { error: 'vector is required' };
+			return cortexError('missing-vector', 'Missing required field: vector', 400, 'vector is required');
 		}
 		if (!Array.isArray(vector)) {
-			return { error: 'vector must be an array' };
+			return cortexError('invalid-vector', 'Invalid field: vector', 422, 'vector must be an array');
 		}
 		if (vector.some((v) => typeof v !== 'number' || isNaN(v))) {
-			return { error: 'vector must contain only numeric values' };
+			return cortexError('invalid-vector', 'Invalid field: vector', 422, 'vector must contain only numeric values');
 		}
 
 		const searchLimit = Math.min(
@@ -487,20 +512,21 @@ export class VectorSearch extends Resource {
 const BATCH_ALLOWED_TABLES = { Memory, SynapseEntry };
 
 export class BatchUpsert extends Resource {
-	async post(data) {
+	static async post(_req, data) {
+		data = await data;
 		const { table, records } = data || {};
 
 		if (!table) {
-			return { error: 'table is required' };
+			return cortexError('missing-table', 'Missing required field: table', 400, 'table is required');
 		}
 		if (!records) {
-			return { error: 'records is required' };
+			return cortexError('missing-records', 'Missing required field: records', 400, 'records is required');
 		}
 		if (!Array.isArray(records)) {
-			return { error: 'records must be an array' };
+			return cortexError('invalid-records', 'Invalid field: records', 422, 'records must be an array');
 		}
 		if (!BATCH_ALLOWED_TABLES[table]) {
-			return { error: `table must be one of: Memory, SynapseEntry` };
+			return cortexError('invalid-table', 'Invalid field: table', 422, 'table must be one of: Memory, SynapseEntry');
 		}
 
 		const tableRef = BATCH_ALLOWED_TABLES[table];
@@ -516,7 +542,7 @@ export class BatchUpsert extends Resource {
 			}
 
 			try {
-				await tableRef.put(record);
+				await transaction(() => tableRef.put(record));
 				stored++;
 			} catch (err) {
 				errors.push({ index: i, record: record.id || `record-${i}`, error: err.message });

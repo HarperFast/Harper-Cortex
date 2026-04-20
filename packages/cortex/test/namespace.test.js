@@ -12,9 +12,11 @@ const { mockSearch, MockMemory, mockExtractor } = vi.hoisted(() => {
 	return { mockSearch, MockMemory, mockExtractor };
 });
 
-vi.mock('harperdb', () => ({
+vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: class {} },
+	transaction: async (cb) => cb(),
+	default: { transaction: async (cb) => cb() },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -44,8 +46,7 @@ describe('MemorySearch with agentId', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { agentId: 'agent-123' },
 		});
@@ -65,8 +66,7 @@ describe('MemorySearch with agentId', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { agentId: 'agent-123', classification: 'decision' },
 		});
@@ -88,8 +88,7 @@ describe('MemorySearch with agentId', () => {
 			capturedParams = params;
 		});
 
-		const search = new MemorySearch();
-		await search.post({
+		await MemorySearch.post(null, {
 			query: 'test',
 			filters: { classification: 'knowledge' },
 		});

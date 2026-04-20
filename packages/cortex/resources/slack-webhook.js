@@ -1,4 +1,4 @@
-import { Resource, tables } from 'harperdb';
+import { Resource, tables } from 'harper';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { classifyMessage } from './memory.js';
 import { EMBEDDING_MODEL, generateEmbedding, log } from './shared.js';
@@ -59,7 +59,8 @@ function verifyBodyToken(dataToken) {
 // ---------------------------------------------------------------------------
 
 export class SlackWebhook extends Resource {
-	async post(data) {
+	static async post(_req, data) {
+		data = await data;
 		if (!verifyBodyToken(data?.token)) {
 			log('warn', 'Rejected webhook: invalid verification token');
 			// Note: Harper Resources always return HTTP 200 — the status field here
@@ -100,7 +101,7 @@ export class SlackWebhook extends Resource {
 		// Return 200 immediately and process async to avoid Slack's 3s timeout
 		const eventData = { ...data };
 		setTimeout(() =>
-			this._processMessage(eventData).catch((err) => {
+			SlackWebhook._processMessage(eventData).catch((err) => {
 				log('error', 'Async message processing failed', {
 					error: err.message,
 					eventId: eventData.event_id,
@@ -110,7 +111,7 @@ export class SlackWebhook extends Resource {
 		return { status: 200, message: 'accepted' };
 	}
 
-	async _processMessage(data, agentId) {
+	static async _processMessage(data, agentId) {
 		const event = data.event;
 
 		log('info', 'Processing Slack message', {

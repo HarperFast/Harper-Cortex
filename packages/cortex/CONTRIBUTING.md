@@ -12,7 +12,7 @@ Thanks for your interest in contributing. This guide covers how to get set up, m
 
 2. Install dependencies:
    ```bash
-   npm install -g harperdb
+   npm install -g harper
    npm install
    ```
 

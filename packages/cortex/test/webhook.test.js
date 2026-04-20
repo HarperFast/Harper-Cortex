@@ -16,9 +16,11 @@ const { MockMemory, MockSynapseEntry } = vi.hoisted(() => {
 	return { MockMemory, MockSynapseEntry };
 });
 
-vi.mock('harperdb', () => ({
+vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+	transaction: async (cb) => cb(),
+	default: { transaction: async (cb) => cb() },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -97,8 +99,7 @@ describe('verifySlackSignature', () => {
 
 describe('SlackWebhook', () => {
 	it('handles URL verification challenge', async () => {
-		const webhook = new SlackWebhook();
-		const result = await webhook.post({
+		const result = await SlackWebhook.post(null, {
 			token: 'test-token',
 			type: 'url_verification',
 			challenge: 'test_challenge_token',
@@ -108,15 +109,13 @@ describe('SlackWebhook', () => {
 	});
 
 	it('ignores non-event_callback types', async () => {
-		const webhook = new SlackWebhook();
-		const result = await webhook.post({ token: 'test-token', type: 'app_rate_limited' });
+		const result = await SlackWebhook.post(null, { token: 'test-token', type: 'app_rate_limited' });
 
 		assert.equal(result.message, 'ignored');
 	});
 
 	it('skips bot messages', async () => {
-		const webhook = new SlackWebhook();
-		const result = await webhook.post({
+		const result = await SlackWebhook.post(null, {
 			token: 'test-token',
 			type: 'event_callback',
 			event: { type: 'message', bot_id: 'B123', text: 'bot message', ts: '123.456' },
@@ -126,8 +125,7 @@ describe('SlackWebhook', () => {
 	});
 
 	it('skips message subtypes (joins, leaves, etc)', async () => {
-		const webhook = new SlackWebhook();
-		const result = await webhook.post({
+		const result = await SlackWebhook.post(null, {
 			token: 'test-token',
 			type: 'event_callback',
 			event: { type: 'message', subtype: 'channel_join', text: 'joined', ts: '123.456' },
@@ -137,8 +135,7 @@ describe('SlackWebhook', () => {
 	});
 
 	it('skips empty messages', async () => {
-		const webhook = new SlackWebhook();
-		const result = await webhook.post({
+		const result = await SlackWebhook.post(null, {
 			token: 'test-token',
 			type: 'event_callback',
 			event: { type: 'message', text: '', user: 'U123', ts: '123.456' },
@@ -148,8 +145,7 @@ describe('SlackWebhook', () => {
 	});
 
 	it('accepts valid human messages for async processing', async () => {
-		const webhook = new SlackWebhook();
-		const result = await webhook.post({
+		const result = await SlackWebhook.post(null, {
 			token: 'test-token',
 			type: 'event_callback',
 			event_id: 'Ev123',
@@ -168,8 +164,7 @@ describe('SlackWebhook', () => {
 	});
 
 	it('handles missing event payload gracefully', async () => {
-		const webhook = new SlackWebhook();
-		const result = await webhook.post({
+		const result = await SlackWebhook.post(null, {
 			token: 'test-token',
 			type: 'event_callback',
 		});
@@ -180,8 +175,7 @@ describe('SlackWebhook', () => {
 
 describe('SlackWebhook token verification', () => {
 	it('rejects requests with wrong token', async () => {
-		const webhook = new SlackWebhook();
-		const result = await webhook.post({
+		const result = await SlackWebhook.post(null, {
 			token: 'wrong-token',
 			type: 'event_callback',
 			event: { type: 'message', text: 'injected', user: 'U999', ts: '1.2' },
@@ -191,8 +185,7 @@ describe('SlackWebhook token verification', () => {
 	});
 
 	it('rejects requests with missing token', async () => {
-		const webhook = new SlackWebhook();
-		const result = await webhook.post({
+		const result = await SlackWebhook.post(null, {
 			type: 'event_callback',
 			event: { type: 'message', text: 'injected', user: 'U999', ts: '1.2' },
 		});
@@ -204,8 +197,7 @@ describe('SlackWebhook token verification', () => {
 		const saved = process.env.SLACK_VERIFICATION_TOKEN;
 		delete process.env.SLACK_VERIFICATION_TOKEN;
 		try {
-			const webhook = new SlackWebhook();
-			const result = await webhook.post({
+			const result = await SlackWebhook.post(null, {
 				type: 'event_callback',
 				event_id: 'Ev999',
 				team_id: 'T123',

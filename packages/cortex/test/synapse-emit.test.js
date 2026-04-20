@@ -16,9 +16,11 @@ const { MockMemory, mockSynapseSearch, MockSynapseEntry } = vi.hoisted(() => {
 	return { MockMemory, mockSynapseSearch, MockSynapseEntry };
 });
 
-vi.mock('harperdb', () => ({
+vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+	transaction: async (cb) => cb(),
+	default: { transaction: async (cb) => cb() },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -48,51 +50,45 @@ describe('SynapseEmit', () => {
 	});
 
 	it('returns error for missing target', async () => {
-		const emit = new SynapseEmit();
-		const result = await emit.post({ projectId: 'proj-1' });
+		const result = await SynapseEmit.post(null, { projectId: 'proj-1' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('target must be one of'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('target must be one of'));
 	});
 
 	it('returns error for invalid target', async () => {
-		const emit = new SynapseEmit();
-		const result = await emit.post({ target: 'vscode', projectId: 'proj-1' });
+		const result = await SynapseEmit.post(null, { target: 'vscode', projectId: 'proj-1' });
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('rejects slack as an emit target', async () => {
-		const emit = new SynapseEmit();
-		const result = await emit.post({ target: 'slack', projectId: 'proj-1' });
+		const result = await SynapseEmit.post(null, { target: 'slack', projectId: 'proj-1' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('target must be one of'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('target must be one of'));
 	});
 
 	it('accepts markdown as an emit target', async () => {
 		mockSynapseSearch.mockImplementation(function*() {});
 
-		const emit = new SynapseEmit();
-		const result = await emit.post({ target: 'markdown', projectId: 'proj-1' });
+		const result = await SynapseEmit.post(null, { target: 'markdown', projectId: 'proj-1' });
 
-		assert.ok(!result.error);
+		assert.ok(!result.type);
 		assert.equal(result.target, 'markdown');
 	});
 
 	it('returns error for missing projectId', async () => {
-		const emit = new SynapseEmit();
-		const result = await emit.post({ target: 'claude_code' });
+		const result = await SynapseEmit.post(null, { target: 'claude_code' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('projectId is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('projectId is required'));
 	});
 
 	it('returns error for null data', async () => {
-		const emit = new SynapseEmit();
-		const result = await emit.post(null);
+		const result = await SynapseEmit.post(null, null);
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('queries only active entries for the project', async () => {
@@ -101,8 +97,7 @@ describe('SynapseEmit', () => {
 			capturedParams = params;
 		});
 
-		const emit = new SynapseEmit();
-		await emit.post({ target: 'claude_code', projectId: 'my-project' });
+		await SynapseEmit.post(null, { target: 'claude_code', projectId: 'my-project' });
 
 		assert.ok(Array.isArray(capturedParams.conditions));
 		const projectCond = capturedParams.conditions.find(c => c.attribute === 'projectId');
@@ -118,8 +113,7 @@ describe('SynapseEmit', () => {
 			for (const e of fakeEntries) { yield e; }
 		});
 
-		const emit = new SynapseEmit();
-		const result = await emit.post({ target: 'claude_code', projectId: 'my-project' });
+		const result = await SynapseEmit.post(null, { target: 'claude_code', projectId: 'my-project' });
 
 		assert.equal(result.target, 'claude_code');
 		assert.equal(result.entryCount, 2);
@@ -133,8 +127,7 @@ describe('SynapseEmit', () => {
 			for (const e of fakeEntries) { yield e; }
 		});
 
-		const emit = new SynapseEmit();
-		const result = await emit.post({ target: 'cursor', projectId: 'my-project' });
+		const result = await SynapseEmit.post(null, { target: 'cursor', projectId: 'my-project' });
 
 		assert.equal(result.output.format, 'cursor_rules');
 		assert.ok(Array.isArray(result.output.files));
@@ -148,8 +141,7 @@ describe('SynapseEmit', () => {
 			for (const e of fakeEntries) { yield e; }
 		});
 
-		const emit = new SynapseEmit();
-		const result = await emit.post({ target: 'windsurf', projectId: 'my-project' });
+		const result = await SynapseEmit.post(null, { target: 'windsurf', projectId: 'my-project' });
 
 		assert.equal(result.output.format, 'windsurf_rules');
 		assert.ok(Array.isArray(result.output.files));
@@ -164,8 +156,7 @@ describe('SynapseEmit', () => {
 			for (const e of fakeEntries.filter(e => e.type === 'intent')) { yield e; }
 		});
 
-		const emit = new SynapseEmit();
-		const result = await emit.post({ target: 'claude_code', projectId: 'my-project', types: ['intent'] });
+		const result = await SynapseEmit.post(null, { target: 'claude_code', projectId: 'my-project', types: ['intent'] });
 
 		assert.equal(result.entryCount, 1);
 		const typeCondition = capturedParams.conditions.find(c => c.attribute === 'type');
@@ -178,8 +169,11 @@ describe('SynapseEmit', () => {
 			for (const e of fakeEntries) { yield e; }
 		});
 
-		const emit = new SynapseEmit();
-		const result = await emit.post({ target: 'claude_code', projectId: 'my-project', types: ['intent', 'constraint'] });
+		const result = await SynapseEmit.post(null, {
+			target: 'claude_code',
+			projectId: 'my-project',
+			types: ['intent', 'constraint'],
+		});
 
 		assert.equal(result.entryCount, 2);
 	});
@@ -187,8 +181,7 @@ describe('SynapseEmit', () => {
 	it('returns entryCount of 0 when no entries exist', async () => {
 		mockSynapseSearch.mockImplementation(function*() {});
 
-		const emit = new SynapseEmit();
-		const result = await emit.post({ target: 'claude_code', projectId: 'empty-project' });
+		const result = await SynapseEmit.post(null, { target: 'claude_code', projectId: 'empty-project' });
 
 		assert.equal(result.entryCount, 0);
 		assert.equal(typeof result.output, 'string');
