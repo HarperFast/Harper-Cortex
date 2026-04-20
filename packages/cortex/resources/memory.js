@@ -487,7 +487,7 @@ export class VectorSearch extends Resource {
 const BATCH_ALLOWED_TABLES = { Memory, SynapseEntry };
 
 export class BatchUpsert extends Resource {
-	async post(data) {
+	static async post(target, data) {
 		const { table, records } = data || {};
 
 		if (!table) {
