@@ -1,4 +1,4 @@
-import { getResponse, Resource, tables } from 'harper';
+import { Resource, tables } from 'harper';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { classifyMessage } from './memory.js';
 import { EMBEDDING_MODEL, generateEmbedding, log } from './shared.js';
@@ -65,7 +65,7 @@ export class SlackWebhook extends Resource {
 			log('warn', 'Rejected webhook: invalid verification token');
 			// Note: Harper Resources always return HTTP 200 — the status field here
 			// is application-level only. The payload is still rejected (not processed).
-			return getResponse(401, { message: 'unauthorized' }, { 'Content-Type': 'application/json' });
+			return { status: 401, message: 'unauthorized' };
 		}
 
 		// Handle Slack URL verification challenge
@@ -76,7 +76,7 @@ export class SlackWebhook extends Resource {
 
 		// Ignore non-event callbacks
 		if (data?.type !== 'event_callback') {
-			return getResponse(200, { message: 'ignored' }, { 'Content-Type': 'application/json' });
+			return { status: 200, message: 'ignored' };
 		}
 
 		// Reject Slack retries to prevent duplicate processing
@@ -85,7 +85,7 @@ export class SlackWebhook extends Resource {
 		const event = data.event;
 		if (!event) {
 			log('warn', 'Event callback received without event payload');
-			return getResponse(200, { message: 'no_event' }, { 'Content-Type': 'application/json' });
+			return { status: 200, message: 'no_event' };
 		}
 
 		// Filter: only process human messages (skip bots, subtypes)
@@ -95,7 +95,7 @@ export class SlackWebhook extends Resource {
 
 		// Filter: skip empty messages
 		if (!event.text || event.text.trim().length === 0) {
-			return getResponse(200, { message: 'empty' }, { 'Content-Type': 'application/json' });
+			return { status: 200, message: 'empty' };
 		}
 
 		// Return 200 immediately and process async to avoid Slack's 3s timeout
@@ -108,7 +108,7 @@ export class SlackWebhook extends Resource {
 				});
 			}), 0);
 
-		return getResponse(200, { message: 'accepted' }, { 'Content-Type': 'application/json' });
+		return { status: 200, message: 'accepted' };
 	}
 
 	static async _processMessage(data, agentId) {

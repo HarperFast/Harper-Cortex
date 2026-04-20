@@ -20,7 +20,6 @@ vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
 	transaction: async (cb) => cb(),
-	getResponse: (status, body, _headers) => ({ status, ...body }),
 	default: { transaction: async (cb) => cb() },
 }));
 
