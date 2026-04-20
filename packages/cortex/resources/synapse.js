@@ -390,6 +390,7 @@ export class SynapseEntry extends SynapseEntryBase {
 
 export class SynapseSearch extends Resource {
 	static async post(_req, data) {
+		data = await data;
 		const { query, projectId, limit, filters } = data || {};
 
 		if (!query || typeof query !== 'string' || query.trim().length === 0) {
@@ -475,6 +476,7 @@ export class SynapseSearch extends Resource {
 
 export class SynapseIngest extends Resource {
 	static async post(_req, data) {
+		data = await data;
 		const { source, content, projectId, parentId, references } = data || {};
 
 		if (!content || typeof content !== 'string' || content.trim().length === 0) {
@@ -573,6 +575,7 @@ export class SynapseIngest extends Resource {
 
 export class SynapseEmit extends Resource {
 	static async post(_req, data) {
+		data = await data;
 		const { target, projectId, types, limit } = data || {};
 
 		if (!target || !SYNAPSE_TARGETS.has(target)) {

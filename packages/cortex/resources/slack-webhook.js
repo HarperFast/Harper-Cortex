@@ -60,6 +60,7 @@ function verifyBodyToken(dataToken) {
 
 export class SlackWebhook extends Resource {
 	static async post(_req, data) {
+		data = await data;
 		if (!verifyBodyToken(data?.token)) {
 			log('warn', 'Rejected webhook: invalid verification token');
 			// Note: Harper Resources always return HTTP 200 — the status field here
