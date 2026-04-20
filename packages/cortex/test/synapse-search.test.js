@@ -49,27 +49,27 @@ describe('SynapseSearch', () => {
 	it('returns error for missing query', async () => {
 		const result = await SynapseSearch.post(null, { projectId: 'proj-1' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('query is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('query is required'));
 	});
 
 	it('returns error for empty string query', async () => {
 		const result = await SynapseSearch.post(null, { query: '', projectId: 'proj-1' });
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('returns error for missing projectId', async () => {
 		const result = await SynapseSearch.post(null, { query: 'architecture decision' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('projectId is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('projectId is required'));
 	});
 
 	it('returns error for null data', async () => {
 		const result = await SynapseSearch.post(null, null);
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('performs vector search with valid query and projectId', async () => {

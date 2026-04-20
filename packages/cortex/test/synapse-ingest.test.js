@@ -68,15 +68,15 @@ describe('SynapseIngest', () => {
 	it('returns error for missing content', async () => {
 		const result = await SynapseIngest.post(null, { source: 'claude_code', projectId: 'proj-1' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('content is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('content is required'));
 	});
 
 	it('returns error for missing projectId', async () => {
 		const result = await SynapseIngest.post(null, { source: 'claude_code', content: 'some content' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('projectId is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('projectId is required'));
 	});
 
 	it('returns error for invalid source', async () => {
@@ -86,14 +86,14 @@ describe('SynapseIngest', () => {
 			projectId: 'proj-1',
 		});
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('source must be one of'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('source must be one of'));
 	});
 
 	it('returns error for missing source', async () => {
 		const result = await SynapseIngest.post(null, { content: 'some content', projectId: 'proj-1' });
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('stores parsed entries and returns count', async () => {

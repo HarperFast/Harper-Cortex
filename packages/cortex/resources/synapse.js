@@ -1,7 +1,7 @@
 import { Resource, tables } from 'harper';
 import { createHash } from 'node:crypto';
 import { classifyMemory } from './classification-provider.js';
-import { DEFAULT_SEARCH_LIMIT, generateEmbedding, log, MAX_SEARCH_LIMIT } from './shared.js';
+import { cortexError, DEFAULT_SEARCH_LIMIT, generateEmbedding, log, MAX_SEARCH_LIMIT } from './shared.js';
 
 const { SynapseEntry: SynapseEntryBase } = tables;
 
@@ -393,10 +393,20 @@ export class SynapseSearch extends Resource {
 		const { query, projectId, limit, filters } = data || {};
 
 		if (!query || typeof query !== 'string' || query.trim().length === 0) {
-			return { error: 'query is required and must be a non-empty string' };
+			return cortexError(
+				'missing-query',
+				'Missing required field: query',
+				400,
+				'query is required and must be a non-empty string',
+			);
 		}
 		if (!projectId || typeof projectId !== 'string' || projectId.trim().length === 0) {
-			return { error: 'projectId is required and must be a non-empty string' };
+			return cortexError(
+				'missing-project-id',
+				'Missing required field: projectId',
+				400,
+				'projectId is required and must be a non-empty string',
+			);
 		}
 
 		const searchLimit = Math.min(
@@ -468,13 +478,28 @@ export class SynapseIngest extends Resource {
 		const { source, content, projectId, parentId, references } = data || {};
 
 		if (!content || typeof content !== 'string' || content.trim().length === 0) {
-			return { error: 'content is required and must be a non-empty string' };
+			return cortexError(
+				'missing-content',
+				'Missing required field: content',
+				400,
+				'content is required and must be a non-empty string',
+			);
 		}
 		if (!projectId || typeof projectId !== 'string' || projectId.trim().length === 0) {
-			return { error: 'projectId is required and must be a non-empty string' };
+			return cortexError(
+				'missing-project-id',
+				'Missing required field: projectId',
+				400,
+				'projectId is required and must be a non-empty string',
+			);
 		}
 		if (!source || !SYNAPSE_SOURCES.has(source)) {
-			return { error: `source must be one of: ${[...SYNAPSE_SOURCES].join(', ')}` };
+			return cortexError(
+				'invalid-source',
+				'Invalid field: source',
+				422,
+				`source must be one of: ${[...SYNAPSE_SOURCES].join(', ')}`,
+			);
 		}
 
 		log('info', 'Synapse ingest requested', { source, projectId });
@@ -551,10 +576,20 @@ export class SynapseEmit extends Resource {
 		const { target, projectId, types, limit } = data || {};
 
 		if (!target || !SYNAPSE_TARGETS.has(target)) {
-			return { error: `target must be one of: ${[...SYNAPSE_TARGETS].join(', ')}` };
+			return cortexError(
+				'invalid-target',
+				'Invalid field: target',
+				422,
+				`target must be one of: ${[...SYNAPSE_TARGETS].join(', ')}`,
+			);
 		}
 		if (!projectId || typeof projectId !== 'string' || projectId.trim().length === 0) {
-			return { error: 'projectId is required and must be a non-empty string' };
+			return cortexError(
+				'missing-project-id',
+				'Missing required field: projectId',
+				400,
+				'projectId is required and must be a non-empty string',
+			);
 		}
 
 		const emitLimit = Math.min(

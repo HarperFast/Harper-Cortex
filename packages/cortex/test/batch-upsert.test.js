@@ -53,15 +53,15 @@ describe('BatchUpsert', () => {
 	it('returns error for missing table', async () => {
 		const result = await BatchUpsert.post(null, { records: [] });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('table is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('table is required'));
 	});
 
 	it('returns error for missing records', async () => {
 		const result = await BatchUpsert.post(null, { table: 'Memory' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('records is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('records is required'));
 	});
 
 	it('returns error for non-array records', async () => {
@@ -70,8 +70,8 @@ describe('BatchUpsert', () => {
 			records: 'not-an-array',
 		});
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('array'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('array'));
 	});
 
 	it('returns error for invalid table name', async () => {
@@ -80,8 +80,8 @@ describe('BatchUpsert', () => {
 			records: [{ id: 'test' }],
 		});
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('Memory') && result.error.includes('SynapseEntry'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('Memory') && result.detail.includes('SynapseEntry'));
 	});
 
 	it('returns success with zero records', async () => {

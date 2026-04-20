@@ -52,21 +52,21 @@ describe('SynapseEmit', () => {
 	it('returns error for missing target', async () => {
 		const result = await SynapseEmit.post(null, { projectId: 'proj-1' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('target must be one of'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('target must be one of'));
 	});
 
 	it('returns error for invalid target', async () => {
 		const result = await SynapseEmit.post(null, { target: 'vscode', projectId: 'proj-1' });
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('rejects slack as an emit target', async () => {
 		const result = await SynapseEmit.post(null, { target: 'slack', projectId: 'proj-1' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('target must be one of'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('target must be one of'));
 	});
 
 	it('accepts markdown as an emit target', async () => {
@@ -74,21 +74,21 @@ describe('SynapseEmit', () => {
 
 		const result = await SynapseEmit.post(null, { target: 'markdown', projectId: 'proj-1' });
 
-		assert.ok(!result.error);
+		assert.ok(!result.type);
 		assert.equal(result.target, 'markdown');
 	});
 
 	it('returns error for missing projectId', async () => {
 		const result = await SynapseEmit.post(null, { target: 'claude_code' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('projectId is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('projectId is required'));
 	});
 
 	it('returns error for null data', async () => {
 		const result = await SynapseEmit.post(null, null);
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('queries only active entries for the project', async () => {

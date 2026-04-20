@@ -44,22 +44,22 @@ describe('VectorSearch', () => {
 	it('returns error for missing vector', async () => {
 		const result = await VectorSearch.post(null, {});
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('vector is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('vector is required'));
 	});
 
 	it('returns error for non-array vector', async () => {
 		const result = await VectorSearch.post(null, { vector: 'not-an-array' });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('array'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('array'));
 	});
 
 	it('returns error for vector with non-numeric values', async () => {
 		const result = await VectorSearch.post(null, { vector: [0.1, 'not-a-number', 0.3] });
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('numeric'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('numeric'));
 	});
 
 	it('performs vector search with valid vector', async () => {

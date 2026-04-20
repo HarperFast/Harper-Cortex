@@ -61,3 +61,25 @@ export async function generateEmbedding(text) {
 	const output = await extractor(text, { pooling: 'mean', normalize: true });
 	return Array.from(output.data);
 }
+
+// ---------------------------------------------------------------------------
+// RFC 9457 Error Helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Build an RFC 9457-shaped error response for Cortex endpoints.
+ * @param {string} slug   - Short identifier used in the type URI (e.g. 'missing-query')
+ * @param {string} title  - Human-readable summary (e.g. 'Missing required field: query')
+ * @param {number} status - HTTP status code
+ * @param {string} [detail] - Optional longer explanation
+ * @param {string} [code]   - Optional short code for programmatic handling
+ */
+export function cortexError(slug, title, status, detail, code) {
+	return {
+		type: `https://github.com/HarperFast/cortex/errors/${slug}`,
+		title,
+		status,
+		...(detail != null ? { detail } : {}),
+		...(code != null ? { code } : {}),
+	};
+}

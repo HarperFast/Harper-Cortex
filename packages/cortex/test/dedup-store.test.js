@@ -42,14 +42,14 @@ describe('MemoryStore with Deduplication', () => {
 	it('returns error for missing text', async () => {
 		const result = await MemoryStore.post(null, {});
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('text is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('text is required'));
 	});
 
 	it('returns error for empty text', async () => {
 		const result = await MemoryStore.post(null, { text: '' });
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('stores memory without dedup threshold', async () => {

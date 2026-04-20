@@ -44,20 +44,20 @@ describe('MemorySearch', () => {
 	it('returns error for missing query', async () => {
 		const result = await MemorySearch.post(null, {});
 
-		assert.ok(result.error);
-		assert.ok(result.error.includes('query is required'));
+		assert.ok(result.type);
+		assert.ok(result.detail.includes('query is required'));
 	});
 
 	it('returns error for empty string query', async () => {
 		const result = await MemorySearch.post(null, { query: '' });
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('returns error for null data', async () => {
 		const result = await MemorySearch.post(null, null);
 
-		assert.ok(result.error);
+		assert.ok(result.type);
 	});
 
 	it('performs vector search with valid query', async () => {
