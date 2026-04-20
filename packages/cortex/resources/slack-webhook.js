@@ -1,4 +1,4 @@
-import { Resource, tables } from 'harper';
+import { getResponse, Resource, tables } from 'harper';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { classifyMessage } from './memory.js';
 import { EMBEDDING_MODEL, generateEmbedding, log } from './shared.js';
@@ -59,12 +59,12 @@ function verifyBodyToken(dataToken) {
 // ---------------------------------------------------------------------------
 
 export class SlackWebhook extends Resource {
-	async post(data) {
+	static async post(_req, data) {
 		if (!verifyBodyToken(data?.token)) {
 			log('warn', 'Rejected webhook: invalid verification token');
 			// Note: Harper Resources always return HTTP 200 — the status field here
 			// is application-level only. The payload is still rejected (not processed).
-			return { status: 401, message: 'unauthorized' };
+			return getResponse(401, { message: 'unauthorized' }, { 'Content-Type': 'application/json' });
 		}
 
 		// Handle Slack URL verification challenge
@@ -75,7 +75,7 @@ export class SlackWebhook extends Resource {
 
 		// Ignore non-event callbacks
 		if (data?.type !== 'event_callback') {
-			return { status: 200, message: 'ignored' };
+			return getResponse(200, { message: 'ignored' }, { 'Content-Type': 'application/json' });
 		}
 
 		// Reject Slack retries to prevent duplicate processing
@@ -84,7 +84,7 @@ export class SlackWebhook extends Resource {
 		const event = data.event;
 		if (!event) {
 			log('warn', 'Event callback received without event payload');
-			return { status: 200, message: 'no_event' };
+			return getResponse(200, { message: 'no_event' }, { 'Content-Type': 'application/json' });
 		}
 
 		// Filter: only process human messages (skip bots, subtypes)
@@ -94,23 +94,23 @@ export class SlackWebhook extends Resource {
 
 		// Filter: skip empty messages
 		if (!event.text || event.text.trim().length === 0) {
-			return { status: 200, message: 'empty' };
+			return getResponse(200, { message: 'empty' }, { 'Content-Type': 'application/json' });
 		}
 
 		// Return 200 immediately and process async to avoid Slack's 3s timeout
 		const eventData = { ...data };
 		setTimeout(() =>
-			this._processMessage(eventData).catch((err) => {
+			SlackWebhook._processMessage(eventData).catch((err) => {
 				log('error', 'Async message processing failed', {
 					error: err.message,
 					eventId: eventData.event_id,
 				});
 			}), 0);
 
-		return { status: 200, message: 'accepted' };
+		return getResponse(200, { message: 'accepted' }, { 'Content-Type': 'application/json' });
 	}
 
-	async _processMessage(data, agentId) {
+	static async _processMessage(data, agentId) {
 		const event = data.event;
 
 		log('info', 'Processing Slack message', {
