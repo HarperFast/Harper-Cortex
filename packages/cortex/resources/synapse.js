@@ -1,4 +1,4 @@
-import { Resource, tables } from 'harperdb';
+import { Resource, tables } from 'harper';
 import { createHash } from 'node:crypto';
 import { classifyMemory } from './classification-provider.js';
 import { DEFAULT_SEARCH_LIMIT, generateEmbedding, log, MAX_SEARCH_LIMIT } from './shared.js';

@@ -1,4 +1,4 @@
-import { Resource, tables } from 'harperdb';
+import { Resource, tables } from 'harper';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { classifyMessage } from './memory.js';
 import { EMBEDDING_MODEL, generateEmbedding, log } from './shared.js';

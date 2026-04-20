@@ -17,7 +17,7 @@ const { mockMemoryPut, mockSynapseEntryPut, MockMemory, MockSynapseEntry } = vi.
 	return { mockMemoryPut, mockSynapseEntryPut, MockMemory, MockSynapseEntry };
 });
 
-vi.mock('harperdb', () => ({
+vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
 }));

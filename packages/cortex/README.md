@@ -75,7 +75,7 @@ Create your free cluster at [fabric.harper.fast](https://fabric.harper.fast):
 ```bash
 git clone https://github.com/HarperFast/Cortex.git
 cd Cortex
-npm install -g harperdb   # Install the Harper runtime (one-time)
+npm install -g harper   # Install the Harper runtime (one-time)
 npm install               # Install project dependencies
 ```
 

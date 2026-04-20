@@ -1,4 +1,4 @@
-import { Resource, tables } from 'harperdb';
+import { Resource, tables } from 'harper';
 import { createHash, randomUUID } from 'node:crypto';
 import { classifyMemory } from './classification-provider.js';
 import {

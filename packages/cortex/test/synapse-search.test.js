@@ -17,7 +17,7 @@ const { MockMemory, mockSynapseSearch, MockSynapseEntry, mockExtractor } = vi.ho
 	return { MockMemory, mockSynapseSearch, MockSynapseEntry, mockExtractor };
 });
 
-vi.mock('harperdb', () => ({
+vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
 }));
