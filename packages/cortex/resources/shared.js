@@ -46,7 +46,8 @@ export function log(level, message, context = {}) {
 let embeddingPipeline;
 async function getEmbeddingPipeline() {
 	if (!embeddingPipeline) {
-		const { pipeline } = await import('@huggingface/transformers');
+		const hft = await import('@huggingface/transformers');
+		const pipeline = hft.pipeline ?? hft.default?.pipeline;
 		embeddingPipeline = await pipeline('feature-extraction', EMBEDDING_MODEL);
 	}
 	return embeddingPipeline;
