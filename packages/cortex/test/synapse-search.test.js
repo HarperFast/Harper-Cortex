@@ -20,6 +20,7 @@ const { MockMemory, mockSynapseSearch, MockSynapseEntry, mockExtractor } = vi.ho
 vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+	default: { transaction: async (cb) => cb() },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({

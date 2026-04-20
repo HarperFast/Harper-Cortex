@@ -14,6 +14,7 @@ const { mockSearch, MockMemory } = vi.hoisted(() => {
 vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: class {} },
+	default: { transaction: async (cb) => cb() },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({

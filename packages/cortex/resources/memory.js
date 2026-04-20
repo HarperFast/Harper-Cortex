@@ -1,4 +1,4 @@
-import { Resource, tables } from 'harper';
+import harper, { Resource, tables } from 'harper';
 import { createHash, randomUUID } from 'node:crypto';
 import { classifyMemory } from './classification-provider.js';
 import {
@@ -9,6 +9,8 @@ import {
 	MAX_SEARCH_LIMIT,
 	VALID_CATEGORIES,
 } from './shared.js';
+
+const { transaction } = harper;
 
 const { Memory, SynapseEntry } = tables;
 
@@ -516,7 +518,7 @@ export class BatchUpsert extends Resource {
 			}
 
 			try {
-				await tableRef.put(record);
+				await transaction(() => tableRef.put(record));
 				stored++;
 			} catch (err) {
 				errors.push({ index: i, record: record.id || `record-${i}`, error: err.message });

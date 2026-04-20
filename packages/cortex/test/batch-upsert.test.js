@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, vi } from 'vitest';
 
-const { mockMemoryPut, mockSynapseEntryPut, MockMemory, MockSynapseEntry } = vi.hoisted(() => {
+const { mockMemoryPut, mockSynapseEntryPut, MockMemory, MockSynapseEntry, mockTransaction } = vi.hoisted(() => {
 	const mockMemoryPut = vi.fn();
 	const mockSynapseEntryPut = vi.fn();
+	const mockTransaction = vi.fn(async (cb) => cb());
 	class MockMemory {
 		static put = mockMemoryPut;
 		static search = vi.fn(function*() {});
@@ -14,12 +15,13 @@ const { mockMemoryPut, mockSynapseEntryPut, MockMemory, MockSynapseEntry } = vi.
 		static search = vi.fn(function*() {});
 		static get = vi.fn();
 	}
-	return { mockMemoryPut, mockSynapseEntryPut, MockMemory, MockSynapseEntry };
+	return { mockMemoryPut, mockSynapseEntryPut, MockMemory, MockSynapseEntry, mockTransaction };
 });
 
 vi.mock('harper', () => ({
 	Resource: class Resource {},
 	tables: { Memory: MockMemory, SynapseEntry: MockSynapseEntry },
+	default: { transaction: mockTransaction },
 }));
 
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -43,6 +45,8 @@ describe('BatchUpsert', () => {
 	beforeEach(() => {
 		mockMemoryPut.mockClear();
 		mockSynapseEntryPut.mockClear();
+		mockTransaction.mockClear();
+		mockTransaction.mockImplementation(async (cb) => cb());
 	});
 
 	it('returns error for missing table', async () => {
@@ -241,5 +245,34 @@ describe('BatchUpsert', () => {
 		assert.equal(result.errors.length, 1);
 		assert.equal(result.errors[0].index, 1);
 		assert.equal(result.errors[0].record, 'record-1');
+	});
+
+	it('wraps each record put in its own transaction (per-record isolation)', async () => {
+		// Scenario: middle record throws; surrounding records must still succeed.
+		// Each successful put must execute inside its own transaction() call.
+		let call = 0;
+		mockMemoryPut.mockImplementation(async () => {
+			call++;
+			if (call === 2) { throw new Error('simulated conflict'); }
+		});
+
+		const records = [
+			{ id: 'a', rawText: 'First' },
+			{ id: 'b', rawText: 'Bad' },
+			{ id: 'c', rawText: 'Third' },
+		];
+
+		const batchUpsert = new BatchUpsert();
+		const result = await batchUpsert.post({ table: 'Memory', records });
+
+		assert.equal(result.stored, 2);
+		assert.equal(result.errors.length, 1);
+		assert.equal(result.errors[0].record, 'b');
+		// transaction() called once per record — confirms per-record boundary
+		assert.equal(mockTransaction.mock.calls.length, 3);
+		// each transaction call received a function
+		for (const c of mockTransaction.mock.calls) {
+			assert.equal(typeof c[0], 'function');
+		}
 	});
 });
