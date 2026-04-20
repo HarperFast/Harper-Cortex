@@ -399,7 +399,7 @@ export class MemoryStore extends Resource {
 
 export class MemoryTable extends Memory {
 	async get(target) {
-		const record = super.get(target);
+		const record = await super.get(target);
 		if (record && typeof record === 'object') {
 			return {
 				id: record.id,

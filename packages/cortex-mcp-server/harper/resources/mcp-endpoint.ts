@@ -211,7 +211,7 @@ async function memoryStore(params: { text: string; source?: string; classificati
 }
 
 async function memoryRecall(params: { id: string }) {
-	const record = Memory.get(params.id);
+	const record = await Memory.get(params.id);
 	if (!record) { return { error: 'Memory not found' }; }
 	return {
 		id: record.id,
