@@ -55,3 +55,43 @@ first-class HTTP responses in `SlackWebhook`.
 4. LMDB is still supported in Harper 5; existing deployments can upgrade
    Harper to 5.0 before upgrading Cortex to 2.0. RocksDB becomes the
    default storage engine for new databases created under Harper 5.
+
+### Deployment requirements (Harper 5.0+)
+
+Cortex 2.0 requires the following Harper server configuration in
+`harper-config.yaml`:
+
+```yaml
+applications:
+  moduleLoader: node
+  dependencyLoader: native
+```
+
+Without `moduleLoader: node`, `@huggingface/transformers` dynamic imports
+return a VM-wrapped module where named exports are inaccessible. Without
+`dependencyLoader: native`, sharp's native bindings fail to load.
+
+Harper's deploy step spawns `npm` using the system `node` binary. Cortex
+requires **Node.js >=22** in the system PATH (consistent with the
+`engines` field in `package.json`). If the system default Node is older,
+optional platform binaries (e.g. `@img/sharp-darwin-arm64`) will be
+silently skipped during deploy due to engine constraint checks. NVM users
+should run `nvm alias default 22` (or 24).
+
+### Additional fixes (Live validation — Dev 4 & Dev 6)
+
+- **`data = await data`** at the top of all 9 static post methods. Harper
+  5's REST layer passes `request.data` as an unresolved Promise; awaiting
+  it before use ensures correct deserialization. `await` on a non-Promise
+  is a no-op, so tests are unaffected.
+- **`SlackWebhook.getResponse()`** calls replaced with plain
+  `{ status, message }` returns. Harper 5.0.1's `getResponse()` takes no
+  arguments; the old call signature was silently returning `{"headers":{}}`.
+- **`dependencyLoader: native` + `allowInstallScripts: true`** in
+  `config.yaml` to ensure sharp and onnxruntime-node load correctly under
+  Harper 5's VM sandbox.
+- **`@huggingface/transformers` ESM/CJS interop** — Harper's module loader
+  wraps dynamic imports such that named exports land on `.default` rather
+  than the module namespace. `pipeline` is now resolved as
+  `hft.pipeline ?? hft.default?.pipeline` for compatibility in both
+  plain Node ESM and Harper's loader context.
